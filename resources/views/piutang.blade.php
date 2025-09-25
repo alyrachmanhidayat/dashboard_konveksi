@@ -6,6 +6,21 @@
 <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Piutang</h3>
 </div>
+
+{{-- notif alert --}}
+@if (session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+@if (session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ session('error') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+
 <div class="card shadow">
     <div class="card-header"></div>
     <div class="card-body">
@@ -29,76 +44,33 @@
                         <th>No Invoice</th>
                         <th>Nama Konsumen</th>
                         <th>Nominal</th>
-                        <th>Nominal tebayar</th>
+                        <th>Nominal terbayar</th>
                         <th>Nominal Bayar</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @forelse ($invoices as $invoice)
                     <tr>
-                        <td>AUG/01/0009/2025</td>
-                        <td>Mr. A</td>
-                        <td>Rp. 1.500.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><input type="text" class="form-control" placeholder="Rp."></div>
-                        </td>
-                        <td>Rp. 1.000.000,-</td>
-                        
-                        <td>
-                            <div style="text-align: center;"><button class="btn btn-success form-control" type="button">Bayar</button></div>
-                        </td>
-                        
+                        <form action="{{ route('piutang.pay', $invoice->id) }}" method="POST">
+                            @csrf
+                            <td>{{ $invoice->invoice_number }}</td>
+                            <td>{{ $invoice->customer_name }}</td>
+                            <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
+                            <td class="text-danger fw-bold">Rp. {{ number_format($invoice->remaining_amount, 0, ',', '.') }}</td>
+                            <td>
+                                <input type="number" class="form-control" name="amount" placeholder="Rp." required min="1" max="{{$invoice->remaining_amount}}">
+                            </td>
+                            <td>
+                                <div style="text-align: center;"><button class="btn btn-success form-control" type="submit">Bayar</button></div>
+                            </td>
+                        </form>
                     </tr>
+                    @empty
                     <tr>
-                        <td>AUG/09/0019/2025</td>
-                        <td>Mr. B</td>
-                        <td>Rp. 3.500.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><input type="text" class="form-control" placeholder="Rp."></div>
-                        </td>
-                        
-                        <td>Rp. 1.000.000,-</td>
-                        
-                        <td>
-                            <div style="text-align: center;"><button class="btn btn-success form-control" type="button">Bayar</button></div>
-                        </td>
+                        <td colspan="6" class="text-center">Tidak ada piutang</td>
                     </tr>
-                    <tr>
-                        <td>AUG/18/0022/2025</td>
-                        <td>Mr. B</td>
-                        <td>Rp. 2.000.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><input type="text" class="form-control" placeholder="Rp."></div>
-                        </td>
-                        <td>Rp. 1.000.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><button class="btn btn-success form-control" type="button">Bayar</button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>AUG/27/0030/2025</td>
-                        <td>Mr. A</td>
-                        <td>Rp. 1.500.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><input type="text" class="form-control" placeholder="Rp."></div>
-                        </td>
-                        <td>Rp. 1.000.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><button class="btn btn-success form-control" type="button">Bayar</button></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>SEP/01/0002/2025</td>
-                        <td>Mr. C</td>
-                        <td>Rp. 1.000.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><input type="text" class="form-control" placeholder="Rp."></div>
-                        </td>
-                        <td>Rp. 1.000.000,-</td>
-                        <td>
-                            <div style="text-align: center;"><button class="btn btn-success form-control" type="button">Bayar</button></div>
-                        </td>
-                    </tr>
+                    @endforelse
                 </tbody>
                 <tfoot>
                     <tr></tr>
