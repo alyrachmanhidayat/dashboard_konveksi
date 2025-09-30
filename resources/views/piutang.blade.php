@@ -44,7 +44,7 @@
                         <th>No Invoice</th>
                         <th>Nama Konsumen</th>
                         <th>Nominal</th>
-                        <th>Nominal terbayar</th>
+                        <th>Sisa Pembayaran</th>
                         <th>Nominal Bayar</th>
                         <th>Action</th>
                     </tr>

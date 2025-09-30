@@ -22,7 +22,7 @@ class AdminUserSeeder extends Seeder
             'is_admin' => true,
             'email_verified_at' => now(),
         ]);
-        
+
         // Create regular user
         User::create([
             'name' => 'Regular User',

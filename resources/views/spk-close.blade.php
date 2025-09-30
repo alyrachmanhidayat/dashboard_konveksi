@@ -4,8 +4,26 @@
 
 {{-- SPK-Close --}}
 <div class="d-sm-flex justify-content-between align-items-center mb-4">
-    <h3 class="text-dark mb-0">Surat Perintah Kerja(SPK)-Close</h3>
+    <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed</h3>
 </div>
+
+{{-- Alert untuk notifikasi --}}
+@if (session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+@endif
+@if ($errors->any())
+<div class="alert alert-danger">
+    <ul>
+        @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 <div class="card shadow">
     <div class="card-header"></div>
     <div class="card-body">
@@ -37,27 +55,34 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($closedSpkList as $spk)
+                    @forelse ($closedSpkList as $spk)
                     <tr>
-                        <td style="text-align: left;">{{ \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') }}</td>
-                            <td>{{ $spk->customer_name }}</td>
-                            <td>{{ $spk->order_name }}</td>
-                            <td>{{ $spk->total_qty }}</td>
-                            <td>{{ $spk->total_meter ?? 'N/A' }}</td>
-                            <td style="background: {{ $spk->status == 'Closed' ? 'var(--bs-success)' : 'var(--bs-danger)' }};text-align: center;">{{ $spk->status }}</td>
-                            <td>
-                                <form action="{{ route('spk.save_price', $spk->id) }}" method="POST">
-                                    @csrf
-                                    <div style="text-align: center;">
-                                        <input type="text" class="form-control" name="price_per_meter" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
-                                    </div>
-                                </form>
-                            </td>
-                            <td style="text-align: center;">
-                                <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control" type="submit" form="save-form-{{$spk->id}}">Save</button>
-                            </td>
+                        <td>{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
+                        <td>{{ $spk->customer_name }}</td>
+                        <td>{{ $spk->order_name }}</td>
+                        <td>{{ $spk->total_qty }}</td>
+                        <td>{{ $spk->total_meter ?? 'N/A' }}</td>
+                        <!-- <td class="text-white text-center" style="background: {{ $spk->status == 'Closed' ? 'var(--bs-success)' : 'var(--bs-danger)' }};">{{ $spk->status }}</td> -->
+                        <td class="text-white text-center {{ $spk->status == 'Closed' ? 'bg-success' : 'bg-danger' }}">{{ $spk->status }}</td>
+
+                        {{-- PERBAIKAN DI SINI --}}
+                        <td>
+                            {{-- Form diberi ID unik sesuai dengan ID SPK --}}
+                            <form action="{{ route('spk.save_price', $spk->id) }}" method="POST" id="save-form-{{$spk->id}}">
+                                @csrf
+                                <input type="number" step="1" class="form-control" name="price_per_meter" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
+                            </form>
+                        </td>
+                        <td class="text-center">
+                            {{-- Tombol ini sekarang akan men-submit form dengan ID yang sesuai --}}
+                            <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control" type="submit" form="save-form-{{$spk->id}}">Save</button>
+                        </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="8" class="text-center">Belum ada SPK yang ditutup atau ditolak.</td>
+                    </tr>
+                    @endforelse
                 </tbody>
                 <tfoot>
                     <tr></tr>
@@ -66,22 +91,14 @@
         </div>
         <div class="row">
             <div class="col-md-6 align-self-center">
-                <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing 1 to 5 of 10</p>
+                <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing {{ $closedSpkList->count() }} data</p>
             </div>
             <div class="col-md-6">
-                <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
-                    <ul class="pagination">
-                        <li class="page-item disabled"><a class="page-link" aria-label="Previous" href="#"><span aria-hidden="true">«</span></a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item"><a class="page-link" aria-label="Next" href="#"><span aria-hidden="true">»</span></a></li>
-                    </ul>
-                </nav>
+                {{-- Pagination bisa ditambahkan di sini nanti jika perlu --}}
             </div>
         </div>
     </div>
     <div class="card-footer"></div>
 </div>
-    
+
 @endsection

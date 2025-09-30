@@ -1,30 +1,104 @@
 @extends('layouts.app')
 
 @section('content')
-
 {{-- Rekap Omzet --}}
 <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Rekap Omzet</h3>
 </div>
-<div class="card shadow">
-    <div class="card-header"></div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6 text-nowrap">
-                <div id="dataTable_length" class="dataTables_length" aria-controls="dataTable"></div>
-                <div class="row">
-                    <div class="col"><label class="col-form-label">Filter&nbsp;</label></div>
-                    <div class="col"><input class="form-control" type="date" style="margin-left: 9px;"></div>
-                    <div class="col">
-                        <div style="padding-top: 6px;"><span style="margin-left: 9px;">s/d</span></div>
+
+{{-- Cards --}}
+<div class="row">
+    <div class="col-md-6 col-xl-3 mb-4">
+        <div class="card shadow py-2 border-left-primary">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col me-2">
+                        <div class="text-uppercase text-primary mb-1 fw-bold text-xs"><span>Order Selesai</span></div>
+                        <div class="text-dark mb-0 fw-bold h5"><span>{{ $orderSelesai }}</span></div>
                     </div>
-                    <div class="col"><input class="form-control" type="date" style="margin-left: 16px;"></div>
+                    <div class="col-auto"><i class="fas fa-calendar fa-2x text-gray-300"></i></div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="text-md-end dataTables_filter" id="dataTable_filter"><label class="form-label"><input type="search" class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"></label></div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4">
+        <div class="card shadow py-2 border-left-success">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col me-2">
+                        <div class="text-uppercase text-success mb-1 fw-bold text-xs"><span>Omzet</span></div>
+                        <div class="text-dark mb-0 fw-bold h5"><span>Rp {{ number_format($totalOmzet, 0, ',', '.') }}</span></div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                </div>
             </div>
         </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4">
+        <div class="card shadow py-2 border-left-info">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col me-2">
+                        <div class="text-uppercase text-info mb-1 fw-bold text-xs"><span>QTY</span></div>
+                        <div class="text-dark mb-0 fw-bold h5"><span>{{ $totalQty }}</span></div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-clipboard-list fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4">
+        <div class="card shadow py-2 border-left-warning">
+            <div class="card-body">
+                <div class="row g-0 align-items-center">
+                    <div class="col me-2">
+                        <div class="text-uppercase text-warning mb-1 fw-bold text-xs"><span>Meter</span></div>
+                        <div class="text-dark mb-0 fw-bold h5"><span>{{ $totalMeter }}</span></div>
+                    </div>
+                    <div class="col-auto"><i class="fas fa-ruler fa-2x text-gray-300"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Chart --}}
+<div class="row">
+    <div class="col">
+        <div class="card shadow mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="text-primary m-0 fw-bold">Grafik Omzet (12 Bulan Terakhir)</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-area"><canvas id="omzetChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{{-- Table --}}
+<div class="card shadow">
+    <div class="card-header">
+        <h6 class="text-primary fw-bold m-0">Detail Omzet</h6>
+    </div>
+    <div class="card-body">
+        {{-- Filter Form --}}
+        <form method="GET" action="{{ route('rekap-omzet') }}">
+            <div class="row align-items-end mb-3">
+                <div class="col-md-4">
+                    <label for="start_date" class="form-label">Dari Tanggal</label>
+                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="end_date" class="form-label">Sampai Tanggal</label>
+                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </div>
+        </form>
         <div class="table-responsive mt-2 table" id="dataTable" role="grid" aria-describedby="dataTable_info">
             <table class="table my-0" id="dataTable">
                 <thead>
@@ -37,66 +111,67 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @forelse ($invoices as $invoice)
                     <tr>
-                        <td>JUL/19/0009/2025</td>
-                        <td>Mr. A</td>
-                        <td>15</td>
-                        <td>100</td>
-                        <td>Rp. 1.000.000-,</td>
+                        <td>{{ $invoice->invoice_number }}</td>
+                        <td>{{ $invoice->customer_name }}</td>
+                        <td>{{ $invoice->total_qty }}</td>
+                        <td>{{ $invoice->spk ? $invoice->spk->total_meter : 'N/A' }}</td>
+                        <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
                     </tr>
+                    @empty
                     <tr>
-                        <td>JUL/22/0009/2025</td>
-                        <td>Mr. B</td>
-                        <td>25</td>
-                        <td>150</td>
-                        <td>Rp. 2.500.000-,</td>
+                        <td colspan="5" class="text-center">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
                     </tr>
-                    <tr>
-                        <td>AUG/10/0009/2025</td>
-                        <td>Mr. C</td>
-                        <td>30</td>
-                        <td>110</td>
-                        <td>Rp. 900.000-,</td>
-                    </tr>
-                    <tr>
-                        <td>AUG/17/0009/2025</td>
-                        <td>Mr. C</td>
-                        <td>10</td>
-                        <td>85</td>
-                        <td>Rp. 1.500.000-,</td>
-                    </tr>
-                    <tr>
-                        <td>SEP/05/0009/2025</td>
-                        <td>Mr. D</td>
-                        <td>20</td>
-                        <td>95</td>
-                        <td>Rp. 2.000.000-,</td>
-                    </tr>
+                    @endforelse
                 </tbody>
-                <tfoot>
-                    <tr></tr>
-                </tfoot>
             </table>
         </div>
-        <div class="row">
-            <div class="col-md-6 align-self-center">
-                <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing 1 to 5 of 20</p>
-            </div>
-            <div class="col-md-6">
-                <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
-                    <ul class="pagination">
-                        <li class="page-item disabled"><a class="page-link" aria-label="Previous" href="#"><span aria-hidden="true">«</span></a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item"><a class="page-link" aria-label="Next" href="#"><span aria-hidden="true">»</span></a></li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    </div>
-    <div class="card-footer">
-        <div style="text-align: right;padding: 19px;"><button class="btn btn-primary" type="button">Print</button></div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+{{-- Pastikan Chart.js sudah di-load di layout utama Anda --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const chartLabels = @json($chartLabels ?? []);
+        const chartValues = @json($chartValues ?? []);
+
+        const chartElement = document.getElementById('omzetChart');
+        if (chartElement) {
+            var ctx = chartElement.getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Omzet',
+                        data: chartValues,
+                        backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: "rgba(78, 115, 223, 1)",
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush

@@ -3,21 +3,25 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SpkController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RekapController;
 
 // Public routes (accessible to guests)
 Route::get('/', [SpkController::class, 'index'])->name('home');
+// SPK Routes
+Route::get('/spk', [SpkController::class, 'create'])->name('spk.create');
+Route::post('/spk', [SpkController::class, 'store'])->name('spk.store');
+Route::get('/spk/{spk}/edit', [SpkController::class, 'edit'])->name('spk.edit'); // ubah dari {spk} menjadi {spk}/edit
+Route::put('/spk/{spk}', [SpkController::class, 'update'])->name('spk.update'); // route untuk update data
+Route::post('/spk/{spk}/status', [SpkController::class, 'updateStatus'])->name('spk.update_status'); // route untuk progress & status
+
+Route::get('/spk-close', [SpkController::class, 'spkClosedIndex'])->name('spk-close');
+Route::post('/spk-close/{spk}/save-price', [SpkController::class, 'savePrice'])->name('spk.save_price');
+
+
 
 // Routes that require authentication
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [SpkController::class, 'index'])->name('dashboard');
-
-    // SPK Routes
-    Route::get('/spk', [SpkController::class, 'create'])->name('spk.create');
-    Route::post('/spk', [SpkController::class, 'store'])->name('spk.store');
-    Route::get('/spk/{spk}', [SpkController::class, 'edit'])->name('spk.edit');
-    Route::get('/spk-close', [SpkController::class, 'spkClosedIndex'])->name('spk-close');
-    Route::post('/spk-close/{spk}/save-price', [SpkController::class, 'savePrice'])->name('spk.save_price');
-
 
     // Invoice Routes
     Route::get('/invoice', [SpkController::class, 'invoiceIndex'])->name('invoice.index');
@@ -29,13 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // Rekap Routes
-    Route::get('/rekap-omzet', function () {
-        return view('rekap-omzet');
-    })->name('rekap-omzet');
-
-    Route::get('/rekap-reject', function () {
-        return view('rekap-reject');
-    })->name('rekap-reject');
+    Route::get('/rekap-omzet', [RekapController::class, 'omzetIndex'])->name('rekap-omzet');
+    Route::get('/rekap-reject', [RekapController::class, 'rejectIndex'])->name('rekap-reject');
 
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
