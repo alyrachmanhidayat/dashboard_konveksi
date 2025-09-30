@@ -34,6 +34,8 @@ $isEdit = isset($spk);
 </div>
 @endif
 
+
+
 {{-- Form utama untuk data SPK --}}
 {{-- Action form dinamis, akan mengarah ke 'store' atau 'update' --}}
 <form method="POST" action="{{ $isEdit ? route('spk.update', $spk->id) : route('spk.store') }}" enctype="multipart/form-data">
@@ -214,12 +216,12 @@ $isEdit = isset($spk);
                     </button>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <button class="btn btn-warning w-100" type="submit" name="action" value="close_order">
+                    <button class="btn btn-warning w-100 btn-modal-trigger" type="button" data-bs-toggle="modal" data-bs-target="#closeOrderModal">
                         <i class="fas fa-check-circle me-1"></i>Close Order
                     </button>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <button class="btn btn-danger w-100" type="submit" name="action" value="reject_order">
+                    <button class="btn btn-danger w-100 btn-modal-trigger" type="button" data-bs-toggle="modal" data-bs-target="#rejectOrderModal">
                         <i class="fas fa-ban me-1"></i>Reject Order
                     </button>
                 </div>
@@ -227,6 +229,57 @@ $isEdit = isset($spk);
         </form>
     </div>
 </div>
+
+<!-- Modal close order-->
+<div class="modal fade" id="closeOrderModal" tabindex="-1" aria-labelledby="closeOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="closeOrderModalLabel">Konfirmasi Close Order</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Apakah Anda yakin ingin menutup SPK ini? Status akan diubah menjadi "Closed" dan <strong>tidak bisa</strong> diubah kembali.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <input type="hidden" name="action" value="close_order">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-check-circle me-1"></i>Ya, Close Order
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal reject order-->
+<div class="modal fade" id="rejectOrderModal" tabindex="-1" aria-labelledby="rejectOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="rejectOrderModalLabel">Konfirmasi Reject Order</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Apakah Anda yakin ingin reject SPK ini? Status akan diubah menjadi "Rejected" dan <strong>tidak bisa</strong> diubah kembali.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <input type="hidden" name="action" value="reject_order">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-ban me-1"></i>Ya, Reject Order
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endif
 
 @endsection
@@ -265,4 +318,8 @@ $isEdit = isset($spk);
         }
     }
 </script>
+<!-- load script modal only di page edit -->
+@if($isEdit)
+<script src="{{ asset('js/spk-modal.js') }}"></script>
+@endif
 @endpush

@@ -14,13 +14,12 @@ Route::get('/spk/{spk}/edit', [SpkController::class, 'edit'])->name('spk.edit');
 Route::put('/spk/{spk}', [SpkController::class, 'update'])->name('spk.update'); // route untuk update data
 Route::post('/spk/{spk}/status', [SpkController::class, 'updateStatus'])->name('spk.update_status'); // route untuk progress & status
 
-Route::get('/spk-close', [SpkController::class, 'spkClosedIndex'])->name('spk-close');
-Route::post('/spk-close/{spk}/save-price', [SpkController::class, 'savePrice'])->name('spk.save_price');
-
-
 
 // Routes that require authentication
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/spk-close', [SpkController::class, 'spkClosedIndex'])->name('spk-close');
+    Route::post('/spk-close/{spk}/save-price', [SpkController::class, 'savePrice'])->name('spk.save_price');
+
     Route::get('/dashboard', [SpkController::class, 'index'])->name('dashboard');
 
     // Invoice Routes
