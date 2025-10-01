@@ -80,11 +80,15 @@ $isEdit = isset($spk);
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="nomor"><strong>Nomor SPK</strong></label>
-                            <input class="form-control" type="text" id="nomor" value="{{ $isEdit ? $spk->spk_number : 'Otomatis' }}" readonly>
+                            @if($isEdit)
+                                <input class="form-control" type="text" id="nomor" value="{{ $spk->spk_number }}" readonly>
+                            @else
+                                <input class="form-control" type="text" id="nomor" value="" placeholder="{{ $spkNumber ?? 'Nomor SPK akan otomatis terisi' }}" readonly>
+                            @endif
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="tanggal-masuk"><strong>Tanggal Masuk</strong></label>
-                            <input class="form-control" type="text" id="tanggal-masuk" value="{{ $isEdit ? \Carbon\Carbon::parse($spk->entry_date)->translatedFormat('l, d F Y') : \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}" readonly>
+                            <input class="form-control" type="date" id="tanggal-masuk" name="entry_date" value="{{ old('entry_date', $spk->entry_date ?? \Carbon\Carbon::now()->toDateString()) }}">
                         </div>
                     </div>
 
@@ -170,6 +174,11 @@ $isEdit = isset($spk);
     <div class="card-body">
         <form id="progressForm" action="{{ route('spk.update_status', $spk->id) }}" method="POST">
             @csrf
+            <div>
+                <span>
+                    Note: Harus klik Update Progress setelah melakukan perubahan
+                </span>
+            </div>
             <div class="row g-3 align-items-center mb-3">
                 <div class="col-md-2 col-6">
                     <div class="text-center p-2 border rounded">
@@ -239,14 +248,20 @@ $isEdit = isset($spk);
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Apakah Anda yakin ingin menutup SPK ini? Status akan diubah menjadi "Closed" dan <strong>tidak bisa</strong> diubah kembali.
+                <p>Apakah Anda yakin ingin menutup SPK ini? Status akan diubah menjadi "Closed" dan <strong>tidak bisa</strong> diubah kembali.</p>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Total Meter Kain (wajib diisi)</strong></label>
+                    <input type="number" step="0.01" class="form-control" name="total_meter_modal" id="close_total_meter" placeholder="Contoh: 150.5" value="{{ $spk->total_meter }}">
+                    <div class="form-text">Nilai ini akan digunakan untuk mengisi total meter kain saat menutup order.</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;">
+                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;" id="closeOrderForm">
                     @csrf
                     <input type="hidden" name="action" value="close_order">
-                    <button type="submit" class="btn btn-warning">
+                    <input type="hidden" name="total_meter" id="hidden_close_total_meter" value="{{ $spk->total_meter }}">
+                    <button type="submit" class="btn btn-warning" onclick="setTotalMeterForClose();">
                         <i class="fas fa-check-circle me-1"></i>Ya, Close Order
                     </button>
                 </form>
@@ -264,14 +279,20 @@ $isEdit = isset($spk);
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Apakah Anda yakin ingin reject SPK ini? Status akan diubah menjadi "Rejected" dan <strong>tidak bisa</strong> diubah kembali.
+                <p>Apakah Anda yakin ingin reject SPK ini? Status akan diubah menjadi "Rejected" dan <strong>tidak bisa</strong> diubah kembali.</p>
+                <div class="mb-3">
+                    <label class="form-label"><strong>Total Meter Kain (wajib diisi)</strong></label>
+                    <input type="number" step="0.01" class="form-control" name="total_meter_modal" id="reject_total_meter" placeholder="Contoh: 150.5" value="{{ $spk->total_meter }}">
+                    <div class="form-text">Nilai ini akan digunakan untuk mengisi total meter kain saat menolak order.</div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;">
+                <form action="{{ route('spk.update_status', $spk->id) }}" method="POST" style="display: inline;" id="rejectOrderForm">
                     @csrf
                     <input type="hidden" name="action" value="reject_order">
-                    <button type="submit" class="btn btn-danger">
+                    <input type="hidden" name="total_meter" id="hidden_reject_total_meter" value="{{ $spk->total_meter }}">
+                    <button type="submit" class="btn btn-danger" onclick="setTotalMeterForReject();">
                         <i class="fas fa-ban me-1"></i>Ya, Reject Order
                     </button>
                 </form>
@@ -317,6 +338,39 @@ $isEdit = isset($spk);
             reader.readAsDataURL(event.target.files[0]);
         }
     }
+
+    // Function to synchronize the total meter value between the main form and modal forms
+    function setTotalMeterForClose() {
+        const modalInput = document.getElementById('close_total_meter');
+        const hiddenInput = document.getElementById('hidden_close_total_meter');
+        if (modalInput && hiddenInput) {
+            hiddenInput.value = modalInput.value;
+        }
+    }
+
+    function setTotalMeterForReject() {
+        const modalInput = document.getElementById('reject_total_meter');
+        const hiddenInput = document.getElementById('hidden_reject_total_meter');
+        if (modalInput && hiddenInput) {
+            hiddenInput.value = modalInput.value;
+        }
+    }
+
+    // Also sync the main form input to modals when it changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const mainTotalMeterInput = document.querySelector('input[name="total_meter"]');
+        if (mainTotalMeterInput) {
+            mainTotalMeterInput.addEventListener('input', function() {
+                // Update both modal inputs when main input changes
+                const value = this.value;
+                const closeInput = document.getElementById('close_total_meter');
+                const rejectInput = document.getElementById('reject_total_meter');
+
+                if (closeInput) closeInput.value = value;
+                if (rejectInput) rejectInput.value = value;
+            });
+        }
+    });
 </script>
 <!-- load script modal only di page edit -->
 @if($isEdit)

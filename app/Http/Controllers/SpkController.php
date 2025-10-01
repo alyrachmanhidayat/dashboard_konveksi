@@ -5,55 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Spk;
 use App\Models\SpkSize;
-use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class SpkController extends Controller
 {
-    /**
-     * Menampilkan daftar SPK di dashboard.
-     */
-    public function index()
-    {
-        // Menghitung data untuk kartu statistik di dashboard
-        $totalOrders = Spk::count();
-        $today = Carbon::today();
-        
-        // Count SPKs with delivery date within 8 days from today (0-8 days from now)
-        $deadlineH8 = Spk::whereDate('delivery_date', '>=', $today)
-                        ->whereDate('delivery_date', '<=', $today->copy()->addDays(8))
-                        ->count();
-        
-        // Count SPKs with delivery date between 9-10 days from today
-        $deadlineH10 = Spk::whereDate('delivery_date', '>', $today->copy()->addDays(8))
-                          ->whereDate('delivery_date', '<=', $today->copy()->addDays(10))
-                          ->count();
-        
-        // Count SPKs with delivery date between 11-12 days from today
-        $deadlineH12 = Spk::whereDate('delivery_date', '>', $today->copy()->addDays(10))
-                          ->whereDate('delivery_date', '<=', $today->copy()->addDays(12))
-                          ->count();
-        
-        // Also keeping the old $deadlineH2 variable for any other uses if needed
-        $deadlineH2 = Spk::whereDate('delivery_date', '=', $today->copy()->addDays(2))->count();
-
-        // Mengambil data untuk tabel SPK yang sedang berjalan
-        $spkList = Spk::where('status', 'In Progress')
-            ->orderBy('delivery_date', 'asc')
-            ->get();
-
-        return view('layouts.dashboard', compact('totalOrders', 'deadlineH8', 'deadlineH2', 'deadlineH10', 'deadlineH12', 'spkList'));
-    }
-
     /**
      * Tampilkan halaman form untuk membuat SPK baru.
      */
     public function create()
     {
-        return view('spk');
+        $spkNumber = $this->generateSpkNumber();
+        return view('spk', compact('spkNumber'));
     }
 
     /**
@@ -64,6 +27,7 @@ class SpkController extends Controller
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'order_name' => 'required|string|max:255',
+            'entry_date' => 'required|date',
             'delivery_date' => 'required|date',
             'material' => 'required|string|max:255',
             'sizes' => 'required|array|min:1',
@@ -71,7 +35,6 @@ class SpkController extends Controller
             'design_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Custom validation: Check if at least one size has a value greater than 0
         $hasSizeValue = false;
         if (is_array($request->sizes)) {
             foreach ($request->sizes as $size => $quantity) {
@@ -93,14 +56,13 @@ class SpkController extends Controller
                 $imagePath = $request->file('design_image')->store('spk_designs', 'public');
             }
 
-            // --- LOGIKA BARU UNTUK NOMOR SPK ---
             $spkNumber = $this->generateSpkNumber();
 
             $spk = Spk::create([
                 'spk_number' => $spkNumber,
                 'customer_name' => $request->customer_name,
                 'order_name' => $request->order_name,
-                'entry_date' => now()->toDateString(),
+                'entry_date' => $request->entry_date,
                 'delivery_date' => $request->delivery_date,
                 'material' => $request->material,
                 'description' => $request->description,
@@ -132,13 +94,11 @@ class SpkController extends Controller
      */
     private function generateSpkNumber()
     {
-        $date = now();
-        $month = $date->format('m');
-        $year = $date->format('Y');
+        return DB::transaction(function () {
+            $date = now();
+            $month = $date->format('m');
+            $year = $date->format('Y');
 
-        // Use a lock to prevent race conditions when generating SPK numbers
-        return DB::transaction(function () use ($month, $year) {
-            // Lock the table to prevent concurrent access
             $lastSpk = Spk::where('spk_number', 'LIKE', "SPK/{$month}/{$year}/%")
                 ->orderBy('spk_number', 'DESC')
                 ->lockForUpdate()
@@ -146,16 +106,14 @@ class SpkController extends Controller
 
             $count = 1;
             if ($lastSpk) {
-                // Ambil nomor urut dari SPK terakhir dan tambahkan 1
                 $lastSpkNumberParts = explode('/', $lastSpk->spk_number);
                 $lastCount = end($lastSpkNumberParts);
                 $count = intval($lastCount) + 1;
             }
 
             return "SPK/{$month}/{$year}/" . str_pad($count, 4, '0', STR_PAD_LEFT);
-        }, 3); // Retry up to 3 times in case of deadlock
+        }, 5);
     }
-
 
     /**
      * Menampilkan halaman untuk mengedit SPK.
@@ -173,6 +131,7 @@ class SpkController extends Controller
         $request->validate([
             'customer_name' => 'required|string|max:255',
             'order_name' => 'required|string|max:255',
+            'entry_date' => 'required|date',
             'delivery_date' => 'required|date',
             'material' => 'required|string|max:255',
             'sizes' => 'required|array',
@@ -184,7 +143,6 @@ class SpkController extends Controller
         try {
             $imagePath = $spk->design_image_path;
             if ($request->hasFile('design_image')) {
-                // Hapus gambar lama jika ada
                 if ($imagePath) {
                     Storage::disk('public')->delete($imagePath);
                 }
@@ -194,6 +152,7 @@ class SpkController extends Controller
             $spk->update([
                 'customer_name' => $request->customer_name,
                 'order_name' => $request->order_name,
+                'entry_date' => $request->entry_date,
                 'delivery_date' => $request->delivery_date,
                 'material' => $request->material,
                 'description' => $request->description,
@@ -201,7 +160,6 @@ class SpkController extends Controller
                 'design_image_path' => $imagePath,
             ]);
 
-            // Hapus ukuran lama dan masukkan yang baru
             $spk->spkSizes()->delete();
             foreach ($request->sizes as $size => $quantity) {
                 if ($quantity > 0) {
@@ -239,167 +197,25 @@ class SpkController extends Controller
             return redirect()->back()->with('success', 'Progress pengerjaan berhasil diperbarui.');
         }
 
-        if ($action == 'close_order') {
-            $spk->update([
-                'status' => 'Closed',
-                'closed_date' => now()
-            ]);
-            return redirect()->route('spk-close')->with('success', 'SPK telah ditutup.');
-        }
+        if ($action == 'close_order' || $action == 'reject_order') {
+            // Validasi: harus selesai print dan jumlah meter wajib diisi
+            if (!$spk->is_print_done) {
+                return redirect()->back()->with('error', 'Tidak dapat ' . ($action == 'close_order' ? 'menutup' : 'menolak') . ' SPK sebelum proses print selesai.');
+            }
 
-        if ($action == 'reject_order') {
+            if (is_null($request->total_meter) || $request->total_meter <= 0) {
+                return redirect()->back()->with('error', 'Jumlah meter harus diisi dengan nilai lebih dari 0 untuk ' . ($action == 'close_order' ? 'menutup' : 'menolak') . ' SPK.');
+            }
+
             $spk->update([
-                'status' => 'Rejected',
-                'closed_date' => now()
+                'status' => $action == 'close_order' ? 'Closed' : 'Rejected',
+                'closed_date' => now(),
+                'total_meter' => $request->total_meter, // Ensure total_meter is saved when closing/rejecting
             ]);
-            return redirect()->route('spk-close')->with('success', 'SPK telah ditolak (rejected).');
+
+            return redirect()->route('spk.closed.view')->with('success', 'SPK telah ' . ($action == 'close_order' ? 'ditutup' : 'ditolak (rejected)') . '.');
         }
 
         return redirect()->back()->with('error', 'Aksi tidak valid.');
-    }
-
-    /**
-     * Menampilkan daftar SPK yang sudah ditutup atau ditolak.
-     */
-    public function spkClosedIndex()
-    {
-        $closedSpkList = Spk::whereIn('status', ['Closed', 'Rejected'])
-            ->orderBy('closed_date', 'desc')
-            ->get();
-
-        return view('spk-close', compact('closedSpkList'));
-    }
-
-    /**
-     * Menyimpan harga per meter pada SPK Closed.
-     */
-    public function savePrice(Request $request, Spk $spk)
-    {
-        $request->validate([
-            'price_per_meter' => 'required|numeric|min:0',
-        ]);
-
-        $spk->update([
-            'price_per_meter' => $request->price_per_meter,
-        ]);
-
-        return redirect()->back()->with('success', 'Harga per meter berhasil disimpan.');
-    }
-
-    /**
-     * Menampilkan daftar SPK yang siap dibuatkan invoice.
-     */
-    public function invoiceIndex()
-    {
-        $spkList = Spk::with('invoice')
-            ->where('status', 'Closed')
-            ->whereDoesntHave('invoice')
-            ->get();
-
-        return view('invoice', compact('spkList'));
-    }
-
-    /**
-     * Membuat satu atau lebih invoice dari SPK yang dipilih.
-     */
-    public function publishInvoice(Request $request)
-    {
-        $request->validate([
-            'selected_spk_ids' => 'required|array|min:1',
-        ]);
-
-        $selectedSpks = Spk::whereIn('id', $request->selected_spk_ids)
-            ->where('status', 'Closed')
-            ->get();
-
-        if ($selectedSpks->isEmpty()) {
-            return redirect()->back()->with('error', 'Tidak ada SPK yang valid untuk diterbitkan invoice.');
-        }
-
-        DB::beginTransaction();
-        try {
-            foreach ($selectedSpks as $spk) {
-                if (is_null($spk->price_per_meter) || is_null($spk->total_meter)) {
-                    throw new \Exception("SPK #{$spk->spk_number} belum memiliki harga/meter atau total meter.");
-                }
-                $totalAmount = $spk->total_meter * $spk->price_per_meter;
-                $invoiceNumber = $this->generateInvoiceNumber();
-
-                Invoice::create([
-                    'invoice_number' => $invoiceNumber,
-                    'spk_id' => $spk->id,
-                    'customer_name' => $spk->customer_name,
-                    'order_name' => $spk->order_name,
-                    'total_qty' => $spk->total_qty,
-                    'total_amount' => $totalAmount,
-                ]);
-            }
-
-            DB::commit();
-            return redirect()->route('invoice.index')->with('success', 'Invoice berhasil diterbitkan!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal menerbitkan invoice. ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Helper function untuk membuat nomor invoice unik.
-     */
-    private function generateInvoiceNumber()
-    {
-        $date = now();
-        $month = $date->format('m');
-        $year = $date->format('Y');
-        $count = Invoice::whereYear('created_at', $year)->whereMonth('created_at', $month)->count() + 1;
-        return "INV/{$month}/{$year}/" . str_pad($count, 4, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Menampilkan halaman piutang.
-     */
-    public function piutangIndex()
-    {
-        $invoices = Invoice::where('is_paid', false)
-            ->with('payments')
-            ->get()
-            ->each(function ($invoice) {
-                $paidAmount = $invoice->payments->sum('amount');
-                $invoice->remaining_amount = $invoice->total_amount - $paidAmount;
-            });
-
-        return view('piutang', compact('invoices'));
-    }
-
-    /**
-     * Memproses pembayaran piutang.
-     */
-    public function payPiutang(Request $request, Invoice $invoice)
-    {
-        $paidAmount = $invoice->payments->sum('amount');
-        $remainingAmount = $invoice->total_amount - $paidAmount;
-
-        $request->validate([
-            'amount' => 'required|numeric|min:1|max:' . $remainingAmount,
-        ]);
-
-        DB::beginTransaction();
-        try {
-            $invoice->payments()->create([
-                'amount' => $request->amount,
-                'payment_date' => now(),
-            ]);
-
-            // Cek apakah pembayaran sudah lunas
-            if (($paidAmount + $request->amount) >= $invoice->total_amount) {
-                $invoice->update(['is_paid' => true]);
-            }
-
-            DB::commit();
-            return redirect()->route('piutang.index')->with('success', 'Pembayaran berhasil dicatat.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal mencatat pembayaran.');
-        }
     }
 }

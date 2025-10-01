@@ -99,8 +99,8 @@
                 </div>
             </div>
         </form>
-        <div class="table-responsive mt-2 table" id="dataTable" role="grid" aria-describedby="dataTable_info">
-            <table class="table my-0" id="dataTable">
+        <div class="table-responsive mt-2" id="dataTableContainer" role="grid">
+            <table class="table my-0" id="dataTableList">
                 <thead>
                     <tr>
                         <th>Nomor Invoice</th>

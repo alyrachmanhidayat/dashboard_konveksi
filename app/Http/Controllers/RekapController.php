@@ -24,7 +24,7 @@ class RekapController extends Controller
     /**
      * Menampilkan halaman rekap omzet dengan data dinamis.
      */
-    public function omzetIndex(Request $request)
+    public function omzet(Request $request)
     {
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
@@ -47,7 +47,7 @@ class RekapController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        // Data untuk Chart (omzet 12 bulan terakhir)
+        // Data untuk Chart (omzet 12 bulan terakhir) - improved to show all 12 months
         $omzetChartData = Invoice::select(
             DB::raw('SUM(total_amount) as total'),
             DB::raw("DATE_FORMAT(updated_at, '%Y-%m') as month")
@@ -58,8 +58,21 @@ class RekapController extends Controller
             ->orderBy('month', 'asc')
             ->get();
 
-        $chartLabels = $omzetChartData->pluck('month');
-        $chartValues = $omzetChartData->pluck('total');
+        // Prepare chart data to include all 12 months with zero values for months without data
+        $months = collect();
+        $values = collect();
+        
+        // Generate last 12 months
+        for ($i = 11; $i >= 0; $i--) {
+            $month = Carbon::now()->subMonths($i)->format('Y-m');
+            $months->push($month);
+            
+            $data = $omzetChartData->firstWhere('month', $month);
+            $values->push($data ? (float)$data->total : 0);
+        }
+
+        $chartLabels = $months;
+        $chartValues = $values;
 
         return view('rekap-omzet', compact(
             'orderSelesai',
@@ -77,7 +90,7 @@ class RekapController extends Controller
     /**
      * Menampilkan halaman rekap reject dengan data dinamis.
      */
-    public function rejectIndex(Request $request)
+    public function reject(Request $request)
     {
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());

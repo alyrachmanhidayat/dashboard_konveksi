@@ -36,6 +36,11 @@
                             <i class="fas fa-file-invoice"></i><span>SPK</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->is('spkClose-view') ? 'active' : '' }}" href="{{ route('spk.closed.view') }}">
+                            <i class="fas fa-file-invoice"></i><span>SPK Closed</span>
+                        </a>
+                    </li>
 
                     <!-- =============================================================== -->
                     <!-- Menu ini HANYA akan muncul untuk Admin yang sudah login -->
@@ -48,7 +53,7 @@
                     </div>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('spk-close') ? 'active' : '' }}" href="{{ url('/spk-close') }}">
-                            <i class="fas fa-file-signature"></i><span>SPK Closed</span>
+                            <i class="fas fa-file-signature"></i><span>SPK Closed Admin</span>
                         </a>
                     </li>
                     <li class="nav-item">
