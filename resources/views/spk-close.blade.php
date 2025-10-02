@@ -56,27 +56,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($closedSpkList as $spk)
-                    <tr>
+                    @php
+                        $filteredSpkList = $closedSpkList->filter(function($spk) {
+                            return empty($spk->price_per_meter);
+                        });
+                    @endphp
+                    @forelse ($filteredSpkList as $spk)
+                    <tr id="spk-row-{{ $spk->id }}">
                         <td>{{ $spk->spk_number }}</td>
                         <td>{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
                         <td>{{ $spk->customer_name }}</td>
                         <td>{{ $spk->order_name }}</td>
                         <td>{{ $spk->total_qty }}</td>
                         <td>{{ $spk->total_meter ?? 'N/A' }}</td>
-                        <!-- <td class="text-white text-center" style="background: {{ $spk->status == 'Closed' ? 'var(--bs-success)' : 'var(--bs-danger)' }};">{{ $spk->status }}</td> -->
                         <td class="text-white text-center {{ $spk->status == 'Closed' ? 'bg-success' : 'bg-danger' }}">{{ $spk->status }}</td>
                         <td>
-                            {{-- Form diberi ID unik sesuai dengan ID SPK --}}
-                            <form action="{{ route('invoice.save_price', $spk->id) }}" method="POST" id="save-form-{{$spk->id}}">
-                                @csrf
-                                <input type="number" step="1" class="form-control" name="price_per_meter" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
-                            </form>
+                            <input type="number" step="1" class="form-control price-input" name="price_per_meter" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
                         </td>
                         <td class="text-center">
-                            {{-- Tombol ini sekarang akan show the modal for this specific SPK --}}
-                            <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control btn-modal-trigger" type="button" data-bs-toggle="modal" data-bs-target="#saveModal{{ $spk->id }}">Save</button>
-                            
+                            <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control btn-save" type="button" data-spk-id="{{ $spk->id }}">Save</button>
+
                             <!-- Modal save price for this specific SPK -->
                             <div class="modal fade" id="saveModal{{ $spk->id }}" tabindex="-1" aria-labelledby="saveModalLabel{{ $spk->id }}" aria-hidden="true">
                                 <div class="modal-dialog">
@@ -86,22 +85,29 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <p>Apakah Anda yakin ingin simpan harga kain ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
+                                            <p>Apakah Anda yakin ingin menyimpan harga kain ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
                                             <div class="mb-3">
-                                                <label class="form-label"><strong>Harga Per-Meter Kain (wajib diisi)</strong></label>
-                                                <input type="number" step="1" class="form-control" name="price_per_meter_modal" id="price_per_meter_{{ $spk->id }}" placeholder="Rp." value="{{ $spk->price_per_meter }}">
-                                                <div class="form-text">Nilai ini akan digunakan untuk menghitung total harga order.</div>
+                                                <label class="form-label"><strong>Kode Order:</strong></label>
+                                                <p class="form-control-plaintext">{{ $spk->spk_number }}</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"><strong>Nama Konsumen:</strong></label>
+                                                <p class="form-control-plaintext">{{ $spk->customer_name }}</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"><strong>Nama Order:</strong></label>
+                                                <p class="form-control-plaintext">{{ $spk->order_name }}</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"><strong>Harga Per-Meter Kain:</strong></label>
+                                                <p class="form-control-plaintext" id="modal-price-{{ $spk->id }}">{{ $spk->price_per_meter ?: 'Belum diisi' }}</p>
                                             </div>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                            <form action="{{ route('invoice.save_price', $spk->id) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                <input type="hidden" name="price_per_meter" id="hidden_price_per_meter_{{ $spk->id }}" value="{{ $spk->price_per_meter }}">
-                                                <button type="submit" class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }}" onclick="setPricePerMeter({{ $spk->id }});">
-                                                    <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga Kain
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-success btn-confirm-save" data-spk-id="{{ $spk->id }}" id="confirm-save-{{ $spk->id }}">
+                                                <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga Kain
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -135,31 +141,156 @@
 
 @push('scripts')
 <script>
-    // Function to synchronize the price per meter value between the modal input and hidden form input
-    function setPricePerMeter(spkId) {
-        const modalInput = document.getElementById('price_per_meter_' + spkId);
-        const hiddenInput = document.getElementById('hidden_price_per_meter_' + spkId);
-        if (modalInput && hiddenInput) {
-            hiddenInput.value = modalInput.value;
+    // Function to show notification using the same style as project alerts
+    function showNotification(message, type) {
+        // Remove any existing notifications
+        const existingNotifications = document.querySelectorAll('.temp-notification');
+        existingNotifications.forEach(notification => notification.remove());
+        
+        // Create notification element
+        const notificationDiv = document.createElement('div');
+        notificationDiv.className = `alert temp-notification alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+        notificationDiv.setAttribute('role', 'alert');
+        notificationDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert notification at the top of the content
+        const contentContainer = document.querySelector('.d-sm-flex')?.parentElement;
+        if (contentContainer) {
+            contentContainer.insertBefore(notificationDiv, contentContainer.firstChild);
+        } else {
+            // Fallback: add to body if specific container not found
+            document.body.insertBefore(notificationDiv, document.body.firstChild);
         }
+        
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => {
+            if (notificationDiv.classList.contains('show')) {
+                const bsAlert = bootstrap.Alert.getInstance(notificationDiv);
+                if (bsAlert) {
+                    bsAlert.close();
+                } else {
+                    // Fallback if Bootstrap Alert instance doesn't exist
+                    notificationDiv.classList.remove('show');
+                    setTimeout(() => {
+                        notificationDiv.remove();
+                    }, 150);
+                }
+            }
+        }, 5000);
     }
     
-    // Update modal input when main form input changes
     document.addEventListener('DOMContentLoaded', function() {
-        // Get all forms that have the price_per_meter input
-        const allPriceInputs = document.querySelectorAll('input[name="price_per_meter"]');
-        
-        allPriceInputs.forEach(function(input) {
-            // Get the form ID to identify which SPK this belongs to
-            const formId = input.closest('form').id; // This will be something like "save-form-123"
-            const spkId = formId.replace('save-form-', '');
-            
-            // Add event listener to update the corresponding modal input when the main form input changes
+        // Update modal price when input changes
+        document.querySelectorAll('.price-input').forEach(function(input) {
             input.addEventListener('input', function() {
-                const modalInput = document.getElementById('price_per_meter_' + spkId);
-                if (modalInput) {
-                    modalInput.value = this.value;
+                const spkId = this.dataset.spkId;
+                const modalPrice = document.getElementById('modal-price-' + spkId);
+                if (modalPrice) {
+                    modalPrice.textContent = this.value || 'Belum diisi';
                 }
+            });
+        });
+
+        // Handle save button click
+        document.querySelectorAll('.btn-save').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const spkId = this.dataset.spkId;
+                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
+
+                if (!priceInput.value) {
+                    showNotification('Harap isi harga per meter terlebih dahulu.', 'error');
+                    return;
+                }
+
+                // Update modal price display
+                const modalPrice = document.getElementById('modal-price-' + spkId);
+                if (modalPrice) {
+                    modalPrice.textContent = priceInput.value;
+                }
+
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('saveModal' + spkId));
+                modal.show();
+            });
+        });
+
+        // Handle confirm save button click
+        document.querySelectorAll('.btn-confirm-save').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const spkId = this.dataset.spkId;
+                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
+
+                if (!priceInput || !priceInput.value) {
+                    showNotification('Harga per meter tidak ditemukan atau kosong.', 'error');
+                    return;
+                }
+
+                // Prepare form data for AJAX request
+                const formData = new FormData();
+                formData.append('price_per_meter', priceInput.value);
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}');
+
+                // Send AJAX request
+                fetch(`{{ route('invoice.save_price', ':spkId') }}`.replace(':spkId', spkId), {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        // Check if the response is ok
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        // Since we know there was a redirect, we should get the redirected URL's content
+                        return response.text(); // Get response as text since it might be HTML
+                    })
+                    .then(text => {
+                        // Check if the response contains success message
+                        if (text && typeof text === 'string' && text.includes('berhasil disimpan')) {
+                            // Remove the table row with fade-out effect
+                            const row = document.getElementById('spk-row-' + spkId);
+                            if (row) {
+                                row.style.transition = 'opacity 0.5s';
+                                row.style.opacity = '0';
+                                setTimeout(() => {
+                                    row.remove();
+                                }, 500);
+                            }
+
+                            // Hide the modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal' + spkId));
+                            if (modal) {
+                                modal.hide();
+                            }
+
+                            // Show success notification using the same style as the project
+                            showNotification('Harga kain berhasil disimpan.', 'success');
+                        } else {
+                            // Try to extract error message from HTML if possible
+                            // Look for alert messages in the HTML
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(text, 'text/html');
+                            const alertDiv = doc.querySelector('.alert');
+                            let errorMessage = 'Gagal menyimpan harga kain';
+
+                            if (alertDiv) {
+                                errorMessage = alertDiv.textContent.trim();
+                            } else {
+                                // Extract potential error messages from the HTML
+                                const errorMatch = text.match(/alert-(?:danger|error)[^>]*>[\s\S]*?<\/div>/i);
+                                if (errorMatch) {
+                                    errorMessage = errorMatch[0].replace(/<[^>]*>/g, '').trim();
+                                }
+                            }
+
+                            showNotification('Terjadi kesalahan: ' + errorMessage, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showNotification('Terjadi kesalahan saat menyimpan harga kain: ' + error.message, 'error');
+                    });
             });
         });
     });

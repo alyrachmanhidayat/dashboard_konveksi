@@ -161,6 +161,7 @@ class InvoiceController extends Controller
     public function viewClosedRedirect()
     {
         $closedSpkList = Spk::whereIn('status', ['Closed', 'Rejected'])
+            ->whereNull('price_per_meter')
             ->orderBy('closed_date', 'desc')
             ->get();
 

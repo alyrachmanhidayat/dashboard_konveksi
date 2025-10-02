@@ -41,7 +41,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($spkList as $spk)
+                        @forelse($spkList as $spk)
                             <tr>
                                 <td>{{ $spk->spk_number }}</td>
                                 <td>{{ $spk->customer_name }}</td>
@@ -54,7 +54,11 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center">Belum ada SPK yang siap diterbitkan invoice.</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

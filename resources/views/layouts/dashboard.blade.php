@@ -99,7 +99,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($spkList as $spk)
+                    @forelse($spkList as $spk)
                     <tr>
                         <td>
                             <div class="{{ $spk->bgColor }} text-white p-2 rounded">
@@ -120,7 +120,11 @@
                         </td>
                         <td style="text-align: center;"><a class="nav-link" href="{{ route('spk.edit', $spk->id) }}">Opsi</a></td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="7" class="text-center">Belum ada order yang tersedia.</td>
+                    </tr>
+                    @endforelse
                 </tbody>
                 <tfoot>
                     <tr></tr>
