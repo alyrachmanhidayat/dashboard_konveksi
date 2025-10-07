@@ -17,6 +17,7 @@ class AdminUserSeeder extends Seeder
         // Create admin user
         User::create([
             'name' => 'Admin User',
+            'username' => 'adminadmin',
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
             'is_admin' => true,
@@ -24,12 +25,12 @@ class AdminUserSeeder extends Seeder
         ]);
 
         // Create regular user
-        User::create([
-            'name' => 'Regular User',
-            'email' => 'user@example.com',
-            'password' => Hash::make('password'),
-            'is_admin' => false,
-            'email_verified_at' => now(),
-        ]);
+        // User::create([
+        //     'name' => 'Regular User',
+        //     'email' => 'user@example.com',
+        //     'password' => Hash::make('password'),
+        //     'is_admin' => false,
+        //     'email_verified_at' => now(),
+        // ]);
     }
 }
