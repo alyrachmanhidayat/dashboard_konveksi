@@ -218,4 +218,14 @@ class SpkController extends Controller
 
         return redirect()->back()->with('error', 'Aksi tidak valid.');
     }
+
+    public function print(Spk $spk)
+    {
+        // 'load()' digunakan untuk Eager Loading relasi pada model yang sudah ada.
+        // Ini memastikan data ukuran (spkSizes) tersedia di dalam view 'spk_print'.
+        $spk->load('spkSizes');
+
+        // Mengembalikan view 'spk_print' dan mengirimkan data $spk ke dalamnya.
+        return view('spk_print', compact('spk'));
+    }
 }

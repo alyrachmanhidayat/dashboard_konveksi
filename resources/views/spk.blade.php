@@ -81,9 +81,9 @@ $isEdit = isset($spk);
                         <div class="col-md-6 mb-3">
                             <label class="form-label" for="nomor"><strong>Nomor SPK</strong></label>
                             @if($isEdit)
-                                <input class="form-control" type="text" id="nomor" value="{{ $spk->spk_number }}" readonly>
+                            <input class="form-control" type="text" id="nomor" value="{{ $spk->spk_number }}" readonly>
                             @else
-                                <input class="form-control" type="text" id="nomor" value="" placeholder="{{ $spkNumber ?? 'Nomor SPK akan otomatis terisi' }}" readonly>
+                            <input class="form-control" type="text" id="nomor" value="" placeholder="{{ $spkNumber ?? 'Nomor SPK akan otomatis terisi' }}" readonly>
                             @endif
                         </div>
                         <div class="col-md-6 mb-3">
@@ -153,9 +153,9 @@ $isEdit = isset($spk);
                         </div>
                         @if($isEdit)
                         <div class="col-md-6 mb-2">
-                            <button class="btn btn-success w-100" type="button" onclick="window.print()">
+                            <a href="{{ route('spk.print', $spk->id) }}" class="btn btn-success w-100" target="_blank">
                                 <i class="fas fa-print me-1"></i>Print SPK
-                            </button>
+                            </a>
                         </div>
                         @endif
                     </div>

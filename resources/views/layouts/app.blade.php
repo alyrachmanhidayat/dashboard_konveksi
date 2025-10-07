@@ -5,12 +5,38 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Dashboard - {{ config('app.name', 'Laravel') }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="stylesheet" href="{{ asset('assets/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&amp;display=swap">
     <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome-all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/bss-overrides.css') }}">
+    <style>
+        #wrapper {
+            display: flex;
+        }
 
+        .sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            /* Membuat sidebar setinggi layar */
+        }
+
+        #content-wrapper {
+            height: 100vh;
+            overflow-y: auto;
+            /* Membuat hanya area konten yang bisa di-scroll */
+            width: 100%;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            /* Memastikan topbar selalu di atas konten */
+        }
+    </style>
 </head>
 
 <body id="page-top">
@@ -82,8 +108,9 @@
 
                 </ul>
 
-                <div class="text-center d-none d-md-inline">
-                    <button class="btn rounded-circle border-0" id="sidebarToggle" type="button"></button>
+                <div class="text-center d-none d-md-inline mt-auto mb-3">
+                    <button class="btn rounded-circle border-0" id="sidebarToggle" type="button">
+                    </button>
                 </div>
             </div>
         </nav>
@@ -96,49 +123,43 @@
                     <div class="container-fluid">
                         <button class="btn btn-link d-md-none rounded-circle me-3" id="sidebarToggleTop" type="button"><i class="fas fa-bars"></i></button>
                         <ul class="navbar-nav flex-nowrap ms-auto">
+                            @auth
+                            <!-- Show live clock and date -->
+                            <li class="nav-item me-3">
+                                <div id="live-clock" class="d-none d-lg-block">
+                                    <span id="date" class="text-gray-600 small"></span>
+                                    <span id="time" class="text-gray-800 fw-bold small ms-2"></span>
+                                </div>
+                            </li>
+                            <!-- Show user name when authenticated -->
+                            <li class="nav-item">
+                                <span class="d-none d-lg-inline me-2 text-gray-600 small">{{ Auth::user()->name }}</span>
+                            </li>
+                            <li class="nav-item my-auto me-3">
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                    </button>
+                                </form>
+                            </li>
+                            @endauth
+
                             @guest
+                            <!-- Show live clock and date for guests -->
+                            <li class="nav-item me-3">
+                                <div id="live-clock" class="d-none d-lg-block">
+                                    <span id="date" class="text-gray-600 small"></span>
+                                    <span id="time" class="text-gray-800 fw-bold small ms-2"></span>
+                                </div>
+                            </li>
                             <!-- Login button for guests -->
-                            <li class="nav-item my-auto">
+                            <li class="nav-item my-auto me-3">
                                 <a class="btn btn-primary btn-sm" href="{{ route('login') }}">
                                     <i class="fas fa-sign-in-alt me-1"></i>Login
                                 </a>
                             </li>
                             @endguest
-
-                            @auth
-                            <div class="d-none d-sm-block topbar-divider"></div>
-                            @endauth
-
-                            <li class="nav-item dropdown no-arrow">
-                                <div class="nav-item dropdown no-arrow">
-                                    <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
-                                        @auth
-                                        <!-- Jika sudah login, tampilkan nama user -->
-                                        <span class="d-none d-lg-inline me-2 text-gray-600 small">{{ Auth::user()->name }}</span>
-                                        @else
-                                        <!-- Jika belum login, tampilkan sebagai guest -->
-                                        <span class="d-none d-lg-inline me-2 text-gray-600 small">Guest User</span>
-                                        @endauth
-                                        <img class="border rounded-circle img-profile" src="https://via.placeholder.com/60">
-                                    </a>
-
-                                    <!-- Dropdown untuk User -->
-                                    @auth
-                                    <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
-                                        <a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i>&nbsp;Profile</a>
-                                        <div class="dropdown-divider"></div>
-
-                                        <!-- Logout Form -->
-                                        <form method="POST" action="{{ route('logout') }}">
-                                            @csrf
-                                            <a class="dropdown-item" href="#" onclick="event.preventDefault(); this.closest('form').submit();">
-                                                <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i>&nbsp;Logout
-                                            </a>
-                                        </form>
-                                    </div>
-                                    @endauth
-                                </div>
-                            </li>
                         </ul>
                     </div>
                 </nav>
@@ -167,25 +188,39 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- SB Admin core JavaScript-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/startbootstrap-sb-admin-2/4.1.4/js/sb-admin-2.min.js"></script>
+    <!-- list JS -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
 
-    <!-- Performance optimization: defer loading of non-critical JavaScript -->
     <script>
-        // Simple performance optimization for sidebar toggle
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    document.body.classList.toggle('sidebar-toggled');
-                    document.querySelector('.sidebar').classList.toggle('toggled');
-                });
+        // Live clock functionality
+        function updateClock() {
+            const now = new Date();
+            const dateOptions = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+
+            const dateElement = document.getElementById('date');
+            const timeElement = document.getElementById('time');
+
+            if (dateElement && timeElement) {
+                dateElement.textContent = now.toLocaleDateString('id-ID', dateOptions); // Menggunakan locale Indonesia
+                timeElement.textContent = now.toLocaleTimeString('id-ID', timeOptions);
             }
-        });
+        }
+
+        // Initialize the clock and update every second
+        updateClock();
+        setInterval(updateClock, 1000);
     </script>
 
-    <!-- (Opsional) Livereload untuk development -->
-    @env('local')
-    <script src="{{ asset('js/livereload.js') }}"></script>
-    @endenv
     @stack('scripts')
 </body>
 

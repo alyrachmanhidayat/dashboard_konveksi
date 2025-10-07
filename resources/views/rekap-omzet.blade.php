@@ -78,64 +78,89 @@
 
 
 {{-- Table --}}
-<div class="card shadow">
-    <div class="card-header">
-        <h6 class="text-primary fw-bold m-0">Detail Omzet</h6>
-    </div>
-    <div class="card-body">
-        {{-- Filter Form --}}
-        <form method="GET" action="{{ route('rekap-omzet') }}">
-            <div class="row align-items-end mb-3">
+<div id="rekap-omzet-list">
+    <div class="card shadow">
+        <div class="card-header">
+            <h6 class="text-primary fw-bold m-0">Detail Omzet Keseluruhan</h6>
+        </div>
+        <div class="card-body">
+
+            {{-- Filter Form & List.js Controls --}}
+            <div class="row mb-3">
                 <div class="col-md-4">
-                    <label for="start_date" class="form-label">Dari Tanggal</label>
-                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ $startDate }}">
+                    <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
                 </div>
-                <div class="col-md-4">
-                    <label for="end_date" class="form-label">Sampai Tanggal</label>
-                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ $endDate }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <div class="col-md-8 text-md-end">
+                    {{-- Form Filter Tanggal --}}
+                    <form method="GET" action="{{ route('rekap-omzet') }}" class="d-inline-block me-2">
+                        <div class="input-group">
+                            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ $startDate }}" title="Dari Tanggal">
+                            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ $endDate }}" title="Sampai Tanggal">
+                            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                            <a href="{{ route('rekap-omzet') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
+                        </div>
+                    </form>
+
+                    {{-- Tombol Sort List.js --}}
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary sort" data-sort="no-invoice">No Invoice</button>
+                        <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
+                        <button class="btn btn-sm btn-outline-primary sort" data-sort="nominal">Nominal</button>
+                    </div>
                 </div>
             </div>
-        </form>
-        <div class="table-responsive mt-2" id="dataTableContainer" role="grid">
-            <table class="table my-0" id="dataTableList">
-                <thead>
-                    <tr>
-                        <th>Nomor Invoice</th>
-                        <th>Nama Konsumen</th>
-                        <th>QTY</th>
-                        <th>Meter</th>
-                        <th>Nominal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($invoices as $invoice)
-                    <tr>
-                        <td>{{ $invoice->invoice_number }}</td>
-                        <td>{{ $invoice->customer_name }}</td>
-                        <td>{{ $invoice->total_qty }}</td>
-                        <td>{{ $invoice->spk ? $invoice->spk->total_meter : 'N/A' }}</td>
-                        <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="text-center">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+
+            <div class="table-responsive mt-2">
+                <table class="table my-0">
+                    <thead>
+                        <tr>
+                            <th>Nomor Invoice</th>
+                            <th>Nama Konsumen</th>
+                            <th>QTY</th>
+                            <th>Meter</th>
+                            <th>Nominal</th>
+                        </tr>
+                    </thead>
+                    {{-- Beri class="list" pada tbody --}}
+                    <tbody class="list">
+                        @forelse ($invoices as $invoice)
+                        <tr>
+                            {{-- Tambahkan class untuk valueNames List.js --}}
+                            <td class="no-invoice">{{ $invoice->invoice_number }}</td>
+                            <td class="konsumen">{{ $invoice->customer_name }}</td>
+                            <td>{{ $invoice->total_qty }}</td>
+                            <td>{{ $invoice->spk ? $invoice->spk->total_meter : 'N/A' }}</td>
+                            <td class="nominal" data-nominal="{{ $invoice->total_amount }}">Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Kontainer untuk pagination List.js --}}
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p id="listjs-info-omzet"></p>
+                </div>
+                <div class="col-md-6">
+                    <ul class="pagination justify-content-end"></ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-{{-- Pastikan Chart.js sudah di-load di layout utama Anda --}}
+{{-- Chart.js & List.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // ... (Kode Chart.js Anda tetap sama dan tidak diubah)
         const chartLabels = @json($chartLabels ?? []);
         const chartValues = @json($chartValues ?? []);
 
@@ -172,6 +197,51 @@
                 }
             });
         }
+
+        // Inisialisasi List.js untuk tabel detail omzet
+        var options = {
+            valueNames: [
+                'no-invoice',
+                'konsumen',
+                {
+                    name: 'nominal',
+                    attr: 'data-nominal'
+                }
+            ],
+            page: 10,
+            pagination: {
+                paginationClass: "pagination",
+            },
+        };
+
+        var omzetList = new List('rekap-omzet-list', options);
+
+        // Fungsi untuk update info pagination
+        function updateListInfo() {
+            const info = document.getElementById('listjs-info-omzet');
+            if (info) {
+                const total = omzetList.items.length;
+                const page = omzetList.page;
+                const i = omzetList.i;
+                const showing = total === 0 ? 0 : Math.min((i + page - 1), total);
+                const start = total === 0 ? 0 : i;
+                info.textContent = `Menampilkan ${start} sampai ${showing} dari ${total} data`;
+            }
+        }
+
+        // Panggil saat pertama kali dan setiap kali list diupdate
+        updateListInfo();
+        omzetList.on('updated', updateListInfo);
+
+        // Styling pagination List.js agar sesuai Bootstrap
+        omzetList.on('updated', function(list) {
+            const paginationItems = document.querySelectorAll('.pagination li');
+            paginationItems.forEach(function(item) {
+                item.classList.add('page-item');
+                const link = item.querySelector('a');
+                if (link) link.classList.add('page-link');
+            });
+        });
     });
 </script>
 @endpush

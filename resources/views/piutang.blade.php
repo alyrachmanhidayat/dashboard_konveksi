@@ -21,80 +21,116 @@
 </div>
 @endif
 
-<div class="card shadow">
-    <div class="card-header"></div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6 text-nowrap">
-                <div id="dataTable_length" class="dataTables_length" aria-controls="dataTable"><label class="form-label">Show&nbsp;<select class="d-inline-block form-select form-select-sm">
-                            <option value="10" selected="">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>&nbsp;</label></div>
+<div id="piutang-table-list">
+    <div class="card shadow">
+        <div class="card-header"></div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    {{-- Input Pencarian --}}
+                    <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
+                </div>
+                <div class="col-md-8 text-md-end">
+                    {{-- Tombol Sort --}}
+                    <span class="me-2">Urutkan berdasarkan:</span>
+                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
+                    <button class="btn btn-sm btn-outline-danger sort" data-sort="sisa-tagihan">Sisa Tagihan</button>
+                </div>
             </div>
-            <div class="col-md-6">
-                <div class="text-md-end dataTables_filter" id="dataTable_filter"><label class="form-label"><input type="search" class="form-control form-control-sm" aria-controls="dataTable" placeholder="Search"></label></div>
-            </div>
-        </div>
-        <div class="table-responsive mt-2 table" id="dataTable" role="grid" aria-describedby="dataTable_info">
-            <table class="table my-0" id="dataTable">
-                <thead>
-                    <tr>
-                        <th>No Invoice</th>
-                        <th>Nama Konsumen</th>
-                        <th>Nominal</th>
-                        <th>Sisa Pembayaran</th>
-                        <th>Nominal Bayar</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($invoices as $invoice)
-                    <tr>
-                        <form action="{{ route('piutang.pay', $invoice->id) }}" method="POST">
-                            @csrf
-                            <td>{{ $invoice->invoice_number }}</td>
-                            <td>{{ $invoice->customer_name }}</td>
+            <div class="table-responsive mt-2">
+                <table class="table my-0">
+                    <thead>
+                        <tr>
+                            <th>No Invoice</th>
+                            <th>Nama Konsumen</th>
+                            <th>Nominal Tagihan</th>
+                            <th>Sisa Tagihan</th>
+                            <th>Nominal Bayar</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    {{-- Beri class="list" pada tbody --}}
+                    <tbody class="list">
+                        @forelse ($invoices as $invoice)
+                        <tr>
+                            {{-- Kita tidak bisa menaruh <form> di dalam <tr> jika <tbody> adalah target List.js --}}
+                            <!--  Jadi, setiap tombol bayar akan memiliki form-nya sendiri -->
+                            <td class="no-invoice">
+                                <a href="{{ route('invoice.print', ['invoiceIds' => $invoice->id]) }}" target="_blank">
+                                    {{ $invoice->invoice_number }}
+                                </a>
+                            </td>
+                            <td class="konsumen">{{ $invoice->customer_name }}</td>
                             <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
-                            <td class="text-danger fw-bold">Rp. {{ number_format($invoice->remaining_amount, 0, ',', '.') }}</td>
-                            <td>
-                                <input type="number" class="form-control" name="amount" placeholder="Rp." required min="1" max="{{$invoice->remaining_amount}}">
+                            <td class="sisa-tagihan text-danger fw-bold" data-sisa-tagihan="{{ $invoice->remaining_amount }}">
+                                Rp. {{ number_format($invoice->remaining_amount, 0, ',', '.') }}
                             </td>
-                            <td>
-                                <div style="text-align: center;"><button class="btn btn-success form-control" type="submit">Bayar</button></div>
-                            </td>
-                        </form>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center">Tidak ada piutang</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-                <tfoot>
-                    <tr></tr>
-                </tfoot>
-            </table>
-        </div>
-        <div class="row">
-            <div class="col-md-6 align-self-center">
-                <p id="dataTable_info" class="dataTables_info" role="status" aria-live="polite">Showing 1 to 5 of 20</p>
+                            <form action="{{ route('piutang.pay', $invoice->id) }}" method="POST">
+                                @csrf
+                                <td>
+                                    <input type="number" class="form-control" name="amount" placeholder="Rp." required min="1" max="{{$invoice->remaining_amount}}">
+                                </td>
+                                <td>
+                                    <button class="btn btn-success w-100" type="submit">Bayar</button>
+                                </td>
+                            </form>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center">Tidak ada data piutang.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            <div class="col-md-6">
-                <nav class="d-lg-flex justify-content-lg-end dataTables_paginate paging_simple_numbers">
-                    <ul class="pagination">
-                        <li class="page-item disabled"><a class="page-link" aria-label="Previous" href="#"><span aria-hidden="true">«</span></a></li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item"><a class="page-link" aria-label="Next" href="#"><span aria-hidden="true">»</span></a></li>
-                    </ul>
-                </nav>
-            </div>
+            {{-- Kontainer untuk pagination List.js --}}
+            <ul class="pagination mt-3"></ul>
         </div>
+        <div class="card-footer"></div>
     </div>
-    <div class="card-footer"></div>
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Opsi untuk List.js
+        var options = {
+            valueNames: [
+                'no-invoice',
+                'konsumen',
+                {
+                    name: 'sisa-tagihan',
+                    attr: 'data-sisa-tagihan'
+                }
+            ],
+            page: 10,
+            pagination: {
+                innerWindow: 1,
+                outerWindow: 1,
+                paginationClass: "pagination", // Nama class untuk <ul>
+            },
+        };
+
+        // Inisialisasi List.js
+        var piutangList = new List('piutang-table-list', options);
+
+        // Tambahkan class Bootstrap ke pagination yang digenerate List.js
+        piutangList.on('updated', function(list) {
+            const paginationItems = document.querySelectorAll('.pagination li');
+            paginationItems.forEach(function(item) {
+                item.classList.add('page-item');
+                const link = item.querySelector('a');
+                if (link) {
+                    link.classList.add('page-link');
+                }
+            });
+            const activeItem = document.querySelector('.pagination li.active');
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+        });
+    });
+</script>
+@endpush
