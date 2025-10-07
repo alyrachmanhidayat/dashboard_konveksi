@@ -119,10 +119,26 @@ class InvoiceController extends Controller
                 // Gabungkan array ID menjadi string dipisahkan koma (e.g., "1,2,3")
                 $invoiceIdsString = implode(',', $createdInvoiceIds);
 
-                // Redirect ke rute 'invoice.print' dengan parameter yang sudah digabung
+                // Return JSON response with redirect URL for AJAX requests
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'redirect' => route('invoice.print', ['invoiceIds' => $invoiceIdsString]),
+                        'message' => 'Invoice berhasil diterbitkan!'
+                    ]);
+                }
+                
+                // Regular redirect for non-AJAX requests
                 return redirect()->route('invoice.print', ['invoiceIds' => $invoiceIdsString]);
             }
 
+            // Return JSON for AJAX requests or redirect for regular requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Invoice berhasil diterbitkan!'
+                ]);
+            }
+            
             return redirect()->route('invoice.index')->with('success', 'Invoice berhasil diterbitkan!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -147,9 +163,21 @@ class InvoiceController extends Controller
      */
     public function piutangIndex()
     {
-        $invoices = Invoice::where('is_paid', false)
-            ->with('payments')
-            ->get();
+        $query = Invoice::where('is_paid', false)->with('payments');
+        
+        // Handle date filtering
+        $startDate = request('start_date');
+        $endDate = request('end_date');
+        
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        $invoices = $query->get();
 
         return view('piutang', compact('invoices'));
     }
@@ -181,7 +209,18 @@ class InvoiceController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('piutang.index')->with('success', 'Pembayaran berhasil dicatat.');
+            
+            // Preserve the date filter when redirecting back
+            $queryParams = [];
+            if ($request->has('start_date')) {
+                $queryParams['start_date'] = $request->get('start_date');
+            }
+            if ($request->has('end_date')) {
+                $queryParams['end_date'] = $request->get('end_date');
+            }
+            
+            $redirectUrl = route('piutang.index', $queryParams);
+            return redirect($redirectUrl)->with('success', 'Pembayaran berhasil dicatat.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal mencatat pembayaran.');

@@ -86,8 +86,8 @@
             </div>
             <div class="card-footer">
                 <div class="text-end py-2">
-                    <button class="btn btn-success" type="submit">Terbitkan Invoice Terpilih</button>
-                    |
+                    <!-- <button class="btn btn-success" type="submit">Terbitkan Invoice Terpilih</button> -->
+
                     {{-- hanya memicu fungsi JavaScript sederhana --}}
                     <button type="button" class="btn btn-info" onclick="publishAndPrint()">
                         Publish & Print Selected Invoices
@@ -157,24 +157,141 @@
         // Cek apakah ada SPK yang dipilih
         const checkedCount = form.querySelectorAll('input[name="selected_spk_ids[]"]:checked').length;
         if (checkedCount === 0) {
-            alert('Silakan pilih setidaknya satu SPK untuk diterbitkan.');
+            // Create and show Bootstrap alert
+            const alertContainer = document.createElement('div');
+            alertContainer.innerHTML = `
+                <div id="selectSpkAlert" class="alert alert-warning alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Silakan pilih setidaknya satu SPK untuk diterbitkan.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            document.body.appendChild(alertContainer);
+
+            // Auto remove alert after 3 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById('selectSpkAlert');
+                if (alertElement) {
+                    const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                    bsAlert.close();
+                    setTimeout(() => {
+                        if (alertElement.parentNode) {
+                            alertElement.parentNode.removeChild(alertElement);
+                        }
+                    }, 150); // Match the fade out duration
+                }
+            }, 3000);
             return;
         }
 
-        // 1. Buat sebuah input hidden untuk menandakan kita mau print setelah publish
-        const printInput = document.createElement('input');
-        printInput.type = 'hidden';
-        printInput.name = 'redirect_to_print';
-        printInput.value = '1';
+        // Submit the form via AJAX to create the invoices
+        const formData = new FormData(form);
+        
+        // Add a flag to indicate we want to print after publishing
+        formData.append('redirect_to_print', '1');
+        
+        fetch('{{ route("invoice.publish") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.redirect) {
+                // Open the print page in a new window
+                window.open(data.redirect, '_blank');
+                
+                // Show success message and refresh current page
+                const successAlert = document.createElement('div');
+                successAlert.innerHTML = `
+                    <div id="successAlert" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                        <i class="fas fa-check-circle me-2"></i>Invoice berhasil diterbitkan! Halaman akan dimuat ulang.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                document.body.appendChild(successAlert);
 
-        // 2. Tambahkan input ini ke dalam form
-        form.appendChild(printInput);
+                // Reload page after 2 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else if (data.message) {
+                const messageAlert = document.createElement('div');
+                messageAlert.innerHTML = `
+                    <div id="messageAlert" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                        <i class="fas fa-check-circle me-2"></i>${data.message || 'Invoice berhasil diterbitkan!'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                document.body.appendChild(messageAlert);
 
-        // 3. Submit form-nya
-        form.submit();
+                // Auto remove after 2 seconds
+                setTimeout(() => {
+                    const alertElement = document.getElementById('messageAlert');
+                    if (alertElement) {
+                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                        bsAlert.close();
+                        setTimeout(() => {
+                            if (alertElement.parentNode) {
+                                alertElement.parentNode.removeChild(alertElement);
+                            }
+                        }, 150);
+                        location.reload();
+                    }
+                }, 2000);
+            } else {
+                // Handle other responses by reloading the page
+                const successAlert2 = document.createElement('div');
+                successAlert2.innerHTML = `
+                    <div id="successAlert2" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                        <i class="fas fa-check-circle me-2"></i>Invoice berhasil diterbitkan!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                document.body.appendChild(successAlert2);
+
+                // Auto remove after 2 seconds
+                setTimeout(() => {
+                    const alertElement = document.getElementById('successAlert2');
+                    if (alertElement) {
+                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                        bsAlert.close();
+                        setTimeout(() => {
+                            if (alertElement.parentNode) {
+                                alertElement.parentNode.removeChild(alertElement);
+                            }
+                        }, 150);
+                        location.reload();
+                    }
+                }, 2000);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const errorAlert = document.createElement('div');
+            errorAlert.innerHTML = `
+                <div id="errorAlert" class="alert alert-danger alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Terjadi kesalahan saat menerbitkan invoice. Silakan coba lagi.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            document.body.appendChild(errorAlert);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById('errorAlert');
+                if (alertElement) {
+                    const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                    bsAlert.close();
+                    setTimeout(() => {
+                        if (alertElement.parentNode) {
+                            alertElement.parentNode.removeChild(alertElement);
+                        }
+                    }, 150);
+                }
+            }, 3000);
+        });
     }
-
-    // If there's a redirect_to_print parameter in session success, handle it
-    // This is done by modifying the controller, which we already did
 </script>
 @endpush

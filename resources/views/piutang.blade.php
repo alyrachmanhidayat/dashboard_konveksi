@@ -26,11 +26,21 @@
         <div class="card-header"></div>
         <div class="card-body">
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     {{-- Input Pencarian --}}
                     <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
                 </div>
-                <div class="col-md-8 text-md-end">
+                <div class="col-md-6 text-md-end">
+                    {{-- Form Filter Tanggal --}}
+                    <form method="GET" action="{{ route('piutang.index') }}" class="d-inline-block me-2">
+                        <div class="input-group">
+                            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}" title="Dari Tanggal">
+                            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}" title="Sampai Tanggal">
+                            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                            <a href="{{ route('piutang.index') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
+                        </div>
+                    </form>
+                    <br><br>
                     {{-- Tombol Sort --}}
                     <span class="me-2">Urutkan berdasarkan:</span>
                     <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>

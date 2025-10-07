@@ -152,7 +152,7 @@
             margin-bottom: 20px;
         }
 
-        .company-logo {
+        /* .company-logo {
             width: 80px;
             height: 80px;
             background: linear-gradient(135deg, #4e73df 0%, #3f51b5 100%);
@@ -163,15 +163,14 @@
             margin: 0 auto 15px;
             color: white;
             font-size: 2rem;
-            font-weight: bold;
-        }
+            font-weight: bold; 
+        }*/
     </style>
 </head>
 
 <body>
     <div class="login-container">
         <div class="login-header">
-            <div class="company-logo">DK</div>
             <h2>Selamat Datang Kembali</h2>
             <p>Silakan masuk ke akun Anda</p>
         </div>
@@ -189,17 +188,17 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="email" class="form-label">Alamat Email</label>
-                    <input id="email"
-                        type="email"
-                        class="form-control @error('email') is-invalid @enderror"
-                        name="email"
-                        value="{{ old('email') }}"
+                    <label for="login" class="form-label">Username atau Email</label>
+                    <input id="login"
+                        type="text"
+                        class="form-control @error('login') is-invalid @enderror"
+                        name="login"
+                        value="{{ old('login') }}"
                         required
-                        autocomplete="email"
+                        autocomplete="username"
                         autofocus
-                        placeholder="masukkan email Anda">
-                    @error('email')
+                        placeholder="masukkan username atau email Anda">
+                    @error('login')
                     <div class="error-message">{{ $message }}</div>
                     @enderror
                 </div>
@@ -218,12 +217,12 @@
                     @enderror
                 </div>
 
-                <div class="checkbox-group">
+                <!-- <div class="checkbox-group">
                     <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                     <label class="form-check-label" for="remember">
                         Ingat Saya
                     </label>
-                </div>
+                </div> -->
 
                 <button type="submit" class="login-btn">
                     Masuk ke Akun

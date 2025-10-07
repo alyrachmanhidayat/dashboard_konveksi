@@ -20,8 +20,8 @@
                 <tr>
                     <!-- Left side -->
                     <td class="company-info">
-                        <div class="company-name">CV. XXXX</div>
-                        <div class="company-address">JL. Mochammad Toha No. XXX</div>
+                        <div class="company-name">{{ config('company.name') }}</div>
+                        <div class="company-address">{{ config('company.address') }}</div>
                         <div class="company-number">Nomor : {{ $invoice->invoice_number }}</div>
                     </td>
 
@@ -103,7 +103,11 @@
         </div>
         @endforeach
     </div>
-
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            window.print(); // Otomatis buka dialog print saat halaman selesai dimuat
+        });
+    </script>
 
 </body>
 
