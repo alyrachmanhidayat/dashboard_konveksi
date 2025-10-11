@@ -194,6 +194,11 @@
 
         // Set initial widths when page loads
         setProgressBarWidths();
+
+        // Auto-refresh functionality - refresh the page every 30 seconds
+        setInterval(function() {
+            location.reload();
+        }, 30000); // 30 seconds (30000 milliseconds)
     });
 </script>
 @endpush
