@@ -14,14 +14,16 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user
-        User::create([
-            'name' => 'Admin User',
-            'username' => 'adminadmin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('admin2'), // You can change this to a more secure password
-            'is_admin' => true,
-            'email_verified_at' => now(),
-        ]);
+        // Create admin user if not exists
+        if (!User::where('email', 'admin@example.com')->exists()) {
+            User::create([
+                'name' => 'Admin User',
+                'username' => 'adminadmin',
+                'email' => 'admin@example.com',
+                'password' => Hash::make('admin2'), // You can change this to a more secure password
+                'is_admin' => true,
+                'email_verified_at' => now(),
+            ]);
+        }
     }
 }

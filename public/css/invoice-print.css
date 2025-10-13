@@ -1,0 +1,255 @@
+body {
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #000;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A5 portrait;
+  margin: 10mm 8mm;
+}
+
+@media print {
+  body {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print { display: none; }
+}
+
+.invoice-container {
+  padding: 10px;
+}
+
+.invoice-page {
+  page-break-inside: avoid;
+  margin-bottom: 10mm;
+}
+
+/* .invoice-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+.invoice-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.invoice-header p {
+  margin: 0;
+  font-size: 12px;
+} */
+
+/* .invoice-info {
+  width: 100%;
+  margin-bottom: 8px;
+  border-collapse: collapse;
+}
+.invoice-info td {
+  padding: 2px 6px;
+  vertical-align: top;
+  font-size: 12px;
+}
+.invoice-info td:first-child {
+  width: 110px;
+  font-weight: bold;
+} */
+
+/* .table-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 5px;
+}
+.table-items th, .table-items td {
+  border: 1px solid #000;
+  padding: 4px;
+  font-size: 12px;
+}
+.table-items th {
+  text-align: center;
+  background: #f3f3f3;
+}
+.table-items td:nth-child(2) { text-align: left; }
+.table-items td:not(:nth-child(2)) { text-align: right; }
+
+.totals {
+  width: 240px;
+  margin-left: auto;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+.totals td {
+  padding: 3px 5px;
+  font-size: 12px;
+}
+.totals td:first-child {
+  text-align: left;
+  font-weight: bold;
+}
+.totals td:last-child {
+  text-align: right;
+} */
+
+
+
+.header-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+
+.company-info {
+  width: 60%;
+  vertical-align: top;
+}
+
+.company-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.company-address,
+.company-number {
+  font-size: 12px;
+  margin: 0;
+}
+
+.invoice-info {
+  width: 40%;
+  vertical-align: top;
+  text-align: right;
+}
+
+.invoice-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  margin-left: 40px;
+}
+
+.invoice-meta {
+  float: right;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.invoice-meta td {
+  padding: 1px 4px;
+  text-align: left;
+}
+
+.table-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+}
+
+.table-items th {
+  text-align: center;
+  font-weight: bold;
+  border-bottom: 1px solid #000;
+  padding: 4px 6px;
+}
+
+.table-items td {
+  padding: 3px 6px;
+  vertical-align: middle;
+  border: none; /* Removes vertical lines */
+}
+
+/* Alignments */
+.table-items td:nth-child(2) {
+  text-align: left;
+}
+
+.table-items td:not(:nth-child(2)) {
+  text-align: right;
+}
+
+/* Optional visual highlight for remaining balance */
+.table-items .sisa-tagihan {
+  font-weight: bold;
+}
+
+/* Adjust spacing between header and rows for compact layout */
+.table-items thead tr {
+  border-bottom: 1px solid #000;
+}
+
+.table-items tbody tr:not(:last-child) td {
+  border-bottom: 1px dashed #999;
+}
+
+
+.footer-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 30px;
+  font-size: 12px;
+}
+
+/* Signature section (left) */
+.signatures {
+  display: flex;
+  gap: 60px;
+}
+
+.signature-box {
+  text-align: center;
+}
+
+.signature-box p {
+  margin-bottom: 40px;
+}
+
+.signature-line {
+  border-top: 1px solid transparent;
+  padding-top: 2px;
+}
+
+/* Summary table (right) */
+.summary-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 180px;
+}
+
+.summary-table td {
+  padding: 2px 5px;
+  text-align: right;
+}
+
+.summary-table td:first-child {
+  text-align: left;
+}
+
+.summary-table tr.total-row td {
+  font-weight: bold;
+  border-top: 2px solid #000;
+  padding-top: 4px;
+}
+
+
+
+/* Screen preview only */
+@media screen {
+  body {
+    max-width: 595px; /* A5 width approximation */
+    margin: 20px auto;
+    box-shadow: 0 0 8px rgba(0,0,0,0.15);
+    padding: 20px;
+  }
+}

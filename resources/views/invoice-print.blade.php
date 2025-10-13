@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Invoice</title>
-    @vite(['resources/css/invoice-print.css'])
-
-
+    <link rel="stylesheet" href="{{asset('css/invoice-print.css')}}">
 </head>
 
 <body>

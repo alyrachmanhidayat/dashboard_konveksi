@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak SPK - {{ $spk->spk_number }}</title>
-    @vite(['resources/css/print.css'])
+    <!-- @vite(['resources/css/print.css']) -->
+    <link rel="stylesheet" href="{{asset('css/print.css')}}">
+
 </head>
 
 <body>

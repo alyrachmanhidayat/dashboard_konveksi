@@ -50,7 +50,7 @@ $isEdit = isset($spk);
             <div class="card mb-3">
                 <div class="card-body text-center shadow">
                     {{-- Menampilkan gambar yang ada jika mode edit, atau placeholder jika mode create --}}
-                    <img id="image-preview" class="mb-3 img-fluid" src="{{ $isEdit && $spk->design_image_path ? asset('storage/' . $spk->design_image_path) : 'https://via.placeholder.com/269x356' }}" alt="Design Preview" style="max-height: 356px; object-fit: cover;">
+                    <img id="image-preview" class="mb-3 img-fluid" src="{{ $isEdit && $spk->design_image_path ? asset('storage/' . $spk->design_image_path) : 'https://placehold.co/269x356?text=Upload\nGambar' }}" alt="Design Preview" style="max-height: 356px; object-fit: cover;">
                     <div class="mb-3">
                         <input type="file" name="design_image" class="form-control" onchange="previewImage(event)">
                     </div>
