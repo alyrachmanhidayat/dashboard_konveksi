@@ -134,9 +134,93 @@ dashboard-konveksi/
 5. Push to the branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
 
-## Deployment
+## Docker Deployment
 
+This project includes an automated Docker deployment script that supports both development and production modes.
+
+### Prerequisites
+- Docker and Docker Compose (v2.0 or higher)
+- Git
+- At least 4GB of RAM available for Docker
+
+### Setup Instructions
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/enzo-nc/dashboard_konveksi-docker.git
+   cd dashboard_konveksi-docker
+   ```
+
+2. Copy the environment file:
+   ```bash
+   cp .env.example .env.docker
+   ```
+   
+3. Configure your environment variables in `.env.docker` if needed (database credentials, application key, etc.)
+
+### Usage
+
+The deployment script provides several options:
+
+#### Development Mode (Live Reloading)
+For development with live code changes:
+```bash
+./deploy-docker.sh --rebuild-dev
+```
+- Code changes on the host are reflected immediately in the container
+- No need to rebuild the image when making changes
+- Uses volume mounting for the application files
+
+#### Production Mode (Optimized Build)
 For production deployment:
+```bash
+./deploy-docker.sh --rebuild-prod
+```
+- Files are copied into the Docker image during build
+- Dependencies are optimized for production
+- Frontend assets are pre-built
+
+#### Other Options
+```bash
+# Run for first-time deployment
+./deploy-docker.sh
+
+# Run migrations only
+./deploy-docker.sh --migrate-only
+
+# Run seeding only
+./deploy-docker.sh --seed-only
+
+# Show help
+./deploy-docker.sh --help
+```
+
+### Accessing the Application
+After deployment:
+- Main Application: http://localhost:8000
+- phpMyAdmin: http://localhost:8080
+- Default phpMyAdmin credentials:
+  - Server: db
+  - Username: laravel_user
+  - Password: laravel_password
+
+### Docker Services
+The setup includes:
+- Laravel application (Apache + PHP)
+- MySQL database (version 8.0)
+- Redis (version 7-alpine) 
+- phpMyAdmin (version 5.2.1)
+
+### Stopping Containers
+To stop all containers:
+```bash
+docker compose down  # For production mode
+docker compose -f docker-compose.dev.yml down  # For development mode
+```
+
+### Deployment
+
+For production deployment without Docker:
 1. Set `APP_ENV=production` in your `.env` file
 2. Run `php artisan config:cache` to cache configuration
 3. Run `php artisan route:cache` to cache routes

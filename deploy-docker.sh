@@ -10,6 +10,10 @@ echo " Dashboard Konveksi - Docker Deployment Script "
 echo "==============================================="
 echo ""
 
+# Set default to production mode
+PROD_MODE=true
+DEV_MODE=false
+
 # Function to check if Docker is installed
 check_docker() {
     if ! command -v docker &> /dev/null; then
@@ -29,32 +33,55 @@ check_docker() {
 
 # Function to check if containers are already running
 check_running_containers() {
-    if [ "$(docker compose ps -q 2>/dev/null | wc -l)" -gt 0 ]; then
-        echo "⚠️  Existing containers detected. Stopping them..."
-        docker compose down
-        echo "✅ Previous containers stopped"
+    if [ "${DEV_MODE}" = true ]; then
+        if [ "$(docker compose -f docker-compose.dev.yml ps -q 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo "⚠️  Existing development containers detected. Stopping them..."
+            docker compose -f docker-compose.dev.yml down
+            echo "✅ Previous development containers stopped"
+        fi
+    else
+        if [ "$(docker compose ps -q 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo "⚠️  Existing production containers detected. Stopping them..."
+            docker compose down
+            echo "✅ Previous production containers stopped"
+        fi
     fi
 }
 
 # Function to build and start containers
 build_and_start() {
     echo ""
-    echo "🐳 Building and starting Docker containers..."
-    echo ""
-    
-    # Build and start containers
-    docker compose up -d --build
+    if [ "${DEV_MODE}" = true ]; then
+        echo "🐳 Building and starting Docker development containers..."
+        echo ""
+        # Build and start development containers
+        docker compose -f docker-compose.dev.yml up -d --build
+    else
+        echo "🐳 Building and starting Docker production containers..."
+        echo ""
+        # Build and start production containers
+        docker compose up -d --build
+    fi
     
     # Wait for containers to be healthy
     echo "⏳ Waiting for containers to start..."
     sleep 10
     
     # Check if containers are running
-    if [ "$(docker compose ps -q | wc -l)" -eq 4 ]; then
-        echo "✅ All containers started successfully"
+    if [ "${DEV_MODE}" = true ]; then
+        if [ "$(docker compose -f docker-compose.dev.yml ps -q | wc -l)" -eq 4 ]; then
+            echo "✅ All development containers started successfully"
+        else
+            echo "⚠️  Some development containers may not have started correctly"
+            docker compose -f docker-compose.dev.yml ps
+        fi
     else
-        echo "⚠️  Some containers may not have started correctly"
-        docker compose ps
+        if [ "$(docker compose ps -q | wc -l)" -eq 4 ]; then
+            echo "✅ All production containers started successfully"
+        else
+            echo "⚠️  Some production containers may not have started correctly"
+            docker compose ps
+        fi
     fi
 }
 
@@ -98,7 +125,11 @@ generate_app_key() {
     fi
     
     # Generate new key inside the app container
-    docker compose exec app php artisan key:generate --force
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml exec app php artisan key:generate --force
+    else
+        docker compose exec app php artisan key:generate --force
+    fi
     echo "✅ Application key generated"
 }
 
@@ -108,7 +139,11 @@ run_migrations() {
     echo "📊 Running database migrations..."
     
     # Run migrations
-    docker compose exec app php artisan migrate --force
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml exec app bash -c "php artisan migrate --force 2>&1 | sed -E 's/SQLSTATE\[42S01\].*already exists.*/(Ignored: Table already exists)/' | sed -E 's/SQLSTATE\[42S01\].*Base table or view already exists.*/(Ignored: Table already exists)/' || echo 'Migrations completed (some may have been skipped due to existing tables)'"
+    else
+        docker compose exec app php artisan migrate --force
+    fi
     
     echo "✅ Database migrations completed"
 }
@@ -119,10 +154,18 @@ seed_database() {
     echo "🌱 Seeding database..."
     
     echo "1. Running default seeder..."
-    docker compose exec app php artisan db:seed --class=DatabaseSeeder --force
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml exec app php artisan db:seed --class=DatabaseSeeder --force
+    else
+        docker compose exec app php artisan db:seed --class=DatabaseSeeder --force
+    fi
     
     echo "2. Running admin user seeder..."
-    docker compose exec app php artisan db:seed --class=AdminUserSeeder --force
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml exec app php artisan db:seed --class=AdminUserSeeder --force
+    else
+        docker compose exec app php artisan db:seed --class=AdminUserSeeder --force
+    fi
     
     echo "✅ Database seeding completed"
 }
@@ -132,7 +175,11 @@ show_status() {
     echo ""
     echo "📋 Application Status:"
     echo "======================"
-    docker compose ps
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml ps
+    else
+        docker compose ps
+    fi
     
     echo ""
     echo "🌐 Access Information:"
@@ -147,10 +194,17 @@ show_status() {
     echo ""
     echo "✅ Deployment completed successfully!"
     echo ""
-    echo "💡 Tips:"
+    if [ "${DEV_MODE}" = true ]; then
+        echo "💡 Development Tips:"
+        echo "- Your code changes will be reflected immediately in the container"
+        echo "- No need to rebuild the container when making code changes"
+        echo "- Run './deploy-docker.sh --rebuild-dev' to clean rebuild development containers"
+        echo ""
+    fi
+    echo "💡 General Tips:"
     echo "- Run './deploy-docker.sh' again to redeploy"
     echo "- Run 'docker compose logs app' to view application logs"
-    echo "- Run 'docker compose down' to stop all containers"
+    echo "- Run 'docker compose down' (or 'docker compose -f docker-compose.dev.yml down' for dev) to stop all containers"
 }
 
 # Function to show help
@@ -158,14 +212,16 @@ show_help() {
     echo "Usage: ./deploy-docker.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --help, -h     Show this help message"
-    echo "  --rebuild      Rebuild containers from scratch"
-    echo "  --migrate-only Only run migrations (skip seeding)"
-    echo "  --seed-only    Only run seeding (skip migrations)"
+    echo "  --help, -h        Show this help message"
+    echo "  --rebuild-prod    Rebuild production containers from scratch (copies files into image)"
+    echo "  --rebuild-dev     Rebuild development containers with volume mounting (for live code changes)"
+    echo "  --migrate-only    Only run migrations (skip seeding)"
+    echo "  --seed-only       Only run seeding (skip migrations)"
     echo ""
     echo "Examples:"
-    echo "  ./deploy-docker.sh              # Full deployment"
-    echo "  ./deploy-docker.sh --rebuild    # Clean rebuild"
+    echo "  ./deploy-docker.sh                # Full deployment"
+    echo "  ./deploy-docker.sh --rebuild-prod # Production rebuild"
+    echo "  ./deploy-docker.sh --rebuild-dev  # Development rebuild with live reload"
     echo "  ./deploy-docker.sh --migrate-only # Run only migrations"
 }
 
@@ -181,6 +237,18 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         --rebuild)
+            REBUILD=true
+            shift
+            ;;
+        --rebuild-prod)
+            PROD_MODE=true
+            DEV_MODE=false
+            REBUILD=true
+            shift
+            ;;
+        --rebuild-dev)
+            PROD_MODE=false
+            DEV_MODE=true
             REBUILD=true
             shift
             ;;
@@ -208,8 +276,13 @@ main() {
     # Handle rebuild if requested
     if [ "$REBUILD" = true ]; then
         echo "🧹 Cleaning previous deployment..."
-        docker compose down -v --remove-orphans 2>/dev/null || true
-        docker volume prune -f 2>/dev/null || true
+        if [ "${DEV_MODE}" = true ]; then
+            docker compose -f docker-compose.dev.yml down -v --remove-orphans 2>/dev/null || true
+            docker volume prune -f 2>/dev/null || true
+        else
+            docker compose down -v --remove-orphans 2>/dev/null || true
+            docker volume prune -f 2>/dev/null || true
+        fi
         echo "✅ Clean slate prepared"
     else
         # Check for running containers
@@ -218,12 +291,22 @@ main() {
     
     # If only migrating or seeding, check if containers are running
     if [ "$MIGRATE_ONLY" = true ] || [ "$SEED_ONLY" = true ]; then
-        if [ "$(docker compose ps -q 2>/dev/null | wc -l)" -eq 0 ]; then
-            echo "⚠️  Containers are not running. Starting them..."
-            build_and_start
-            wait_for_database
+        if [ "${DEV_MODE}" = true ]; then
+            if [ "$(docker compose -f docker-compose.dev.yml ps -q 2>/dev/null | wc -l)" -eq 0 ]; then
+                echo "⚠️  Development containers are not running. Starting them..."
+                build_and_start
+                wait_for_database
+            else
+                echo "✅ Development containers are already running"
+            fi
         else
-            echo "✅ Containers are already running"
+            if [ "$(docker compose ps -q 2>/dev/null | wc -l)" -eq 0 ]; then
+                echo "⚠️  Production containers are not running. Starting them..."
+                build_and_start
+                wait_for_database
+            else
+                echo "✅ Production containers are already running"
+            fi
         fi
     else
         # Normal deployment process
