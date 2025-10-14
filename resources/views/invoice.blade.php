@@ -54,6 +54,7 @@
                         {{-- Beri class="list" pada tbody --}}
                         <tbody class="list">
                             @forelse($spkList as $spk)
+                                @if($spk->status == 'Closed' && $spk->price_per_meter && $spk->total_meter)
                             <tr>
                                 {{-- Tambahkan class untuk valueNames List.js --}}
                                 <td class="no-order">{{ $spk->spk_number }}</td>
@@ -62,13 +63,21 @@
                                 <td>{{ $spk->total_qty }}</td>
                                 <td class="nilai" data-nilai="{{ $spk->total_meter * $spk->price_per_meter }}">Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}</td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="form-check-input" name="selected_spk_ids[]" value="{{ $spk->id }}">
+                                    <input type="radio" class="form-check-input" name="selected_spk_ids" value="{{ $spk->id }}" onchange="toggleSubmitButton()">
                                 </td>
                             </tr>
+                                @endif
                             @empty
-                            <tr>
-                                <td colspan="6" class="text-center">Belum ada SPK yang siap diterbitkan invoice.</td>
-                            </tr>
+                                @php
+                                    $filteredSpkList = $spkList->filter(function($spk) {
+                                        return $spk->status == 'Closed' && $spk->price_per_meter && $spk->total_meter;
+                                    });
+                                @endphp
+                                @if($filteredSpkList->count() == 0)
+                                <tr>
+                                    <td colspan="6" class="text-center">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                </tr>
+                                @endif
                             @endforelse
                         </tbody>
                     </table>
@@ -88,8 +97,8 @@
                 <div class="text-end py-2">
                     <!-- <button class="btn btn-success" type="submit">Terbitkan Invoice Terpilih</button> -->
 
-                    {{-- hanya memicu fungsi JavaScript sederhana --}}
-                    <button type="button" class="btn btn-info" onclick="publishAndPrint()">
+                    {{-- Changed from inline JavaScript to form submission with redirect_to_print flag and open in new tab --}}
+                    <button type="submit" class="btn btn-info" name="redirect_to_print" value="1" formtarget="_blank" id="submit-btn" disabled>
                         Publish & Print Selected Invoices
                     </button>
                 </div>
@@ -148,20 +157,35 @@
                 if (link) link.classList.add('page-link');
             });
         });
+        
+        // Initialize button state on page load
+        toggleSubmitButton();
     });
+    
+    // Function to toggle submit button based on radio selection
+    function toggleSubmitButton() {
+        const selectedRadio = document.querySelector('input[name="selected_spk_ids"]:checked');
+        const submitButton = document.getElementById('submit-btn');
+        
+        if (selectedRadio) {
+            submitButton.disabled = false;
+        } else {
+            submitButton.disabled = true;
+        }
+    }
 
     // Handle the "Publish & Print Selected Invoices" button
     function publishAndPrint() {
         const form = document.getElementById('publish-form');
 
-        // Cek apakah ada SPK yang dipilih
-        const checkedCount = form.querySelectorAll('input[name="selected_spk_ids[]"]:checked').length;
-        if (checkedCount === 0) {
+        // Cek apakah ada SPK yang dipilih (for radio button)
+        const selectedRadio = form.querySelector('input[name="selected_spk_ids"]:checked');
+        if (!selectedRadio) {
             // Create and show Bootstrap alert
             const alertContainer = document.createElement('div');
             alertContainer.innerHTML = `
                 <div id="selectSpkAlert" class="alert alert-warning alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Silakan pilih setidaknya satu SPK untuk diterbitkan.
+                    <i class="fas fa-exclamation-triangle me-2"></i>Silakan pilih satu SPK untuk diterbitkan.
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
@@ -202,20 +226,20 @@
                 // Open the print page in a new window
                 window.open(data.redirect, '_blank');
                 
-                // Show success message and refresh current page
+                // Show success message
                 const successAlert = document.createElement('div');
                 successAlert.innerHTML = `
                     <div id="successAlert" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
-                        <i class="fas fa-check-circle me-2"></i>Invoice berhasil diterbitkan! Halaman akan dimuat ulang.
+                        <i class="fas fa-check-circle me-2"></i>Invoice berhasil diterbitkan!
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 `;
                 document.body.appendChild(successAlert);
 
-                // Reload page after 2 seconds
+                // Refresh the page after 3 seconds to update the table
                 setTimeout(() => {
                     location.reload();
-                }, 2000);
+                }, 3000);
             } else if (data.message) {
                 const messageAlert = document.createElement('div');
                 messageAlert.innerHTML = `
@@ -226,22 +250,12 @@
                 `;
                 document.body.appendChild(messageAlert);
 
-                // Auto remove after 2 seconds
+                // Refresh the page after 3 seconds to update the table
                 setTimeout(() => {
-                    const alertElement = document.getElementById('messageAlert');
-                    if (alertElement) {
-                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
-                        bsAlert.close();
-                        setTimeout(() => {
-                            if (alertElement.parentNode) {
-                                alertElement.parentNode.removeChild(alertElement);
-                            }
-                        }, 150);
-                        location.reload();
-                    }
-                }, 2000);
+                    location.reload();
+                }, 3000);
             } else {
-                // Handle other responses by reloading the page
+                // Handle other responses
                 const successAlert2 = document.createElement('div');
                 successAlert2.innerHTML = `
                     <div id="successAlert2" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
@@ -251,20 +265,10 @@
                 `;
                 document.body.appendChild(successAlert2);
 
-                // Auto remove after 2 seconds
+                // Refresh the page after 3 seconds to update the table
                 setTimeout(() => {
-                    const alertElement = document.getElementById('successAlert2');
-                    if (alertElement) {
-                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
-                        bsAlert.close();
-                        setTimeout(() => {
-                            if (alertElement.parentNode) {
-                                alertElement.parentNode.removeChild(alertElement);
-                            }
-                        }, 150);
-                        location.reload();
-                    }
-                }, 2000);
+                    location.reload();
+                }, 3000);
             }
         })
         .catch(error => {

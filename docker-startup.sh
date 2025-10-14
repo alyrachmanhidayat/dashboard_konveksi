@@ -59,13 +59,18 @@ php artisan migrate --force 2>&1 | sed -E 's/SQLSTATE\[42S01\].*already exists.*
 php artisan config:clear 2>/dev/null || echo "Config cache clear not needed or failed"
 php artisan cache:clear 2>/dev/null || echo "Cache clear not needed or failed"
 
-# If we're in development, seed the database
-if [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "development" ]; then
-  echo "Seeding database..."
+# Check if seeding has already been performed by looking for a marker file
+if [ ! -f "/var/www/storage/app/seeding_complete" ]; then
+  echo "Seeding database for the first time..."
   php artisan db:seed --force
+  # Create marker file to indicate seeding has been completed
+  mkdir -p /var/www/storage/app
+  touch /var/www/storage/app/seeding_complete
+  # Ensure proper permissions for the marker file
+  chown www-data:www-data /var/www/storage/app/seeding_complete
+  echo "Database seeding completed and marker file created."
 else
-  # For production, run seeders but ignore errors if they already ran
-  php artisan db:seed --force 2>&1 | sed 's/SQLSTATE\[23000\].*Integrity constraint violation.*/(Ignored: Possible duplicate entry)/' || echo "Seeding completed or already run"
+  echo "Database seeding has already been performed. Skipping seeders."
 fi
 
 # Start Apache in foreground

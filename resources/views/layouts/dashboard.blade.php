@@ -148,6 +148,11 @@
 
 @push('scripts')
 <script>
+    // Auto-refresh functionality - refresh the page every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000); // 30 seconds (30000 milliseconds)
+
     document.addEventListener('DOMContentLoaded', function() {
         // Opsi untuk List.js
         var options = {

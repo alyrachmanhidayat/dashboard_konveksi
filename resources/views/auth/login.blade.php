@@ -188,7 +188,7 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="login" class="form-label">Username atau Email</label>
+                    <label for="login" class="form-label">Username</label>
                     <input id="login"
                         type="text"
                         class="form-control @error('login') is-invalid @enderror"

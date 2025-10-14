@@ -191,7 +191,6 @@
 
         // Function to show notification using the same style as project alerts
         function showNotification(message, type) {
-            // ... (kode notifikasi Anda tetap sama)
             const existingNotifications = document.querySelectorAll('.temp-notification');
             existingNotifications.forEach(notification => notification.remove());
             const notificationDiv = document.createElement('div');

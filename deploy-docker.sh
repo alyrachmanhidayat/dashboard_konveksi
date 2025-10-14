@@ -90,15 +90,25 @@ wait_for_database() {
     echo ""
     echo "⏳ Waiting for database to be ready..."
     
-    # Wait for MySQL to be ready
+    # Wait for MySQL to be ready - use appropriate container name based on mode
     timeout=60
     counter=0
     
-    until docker compose exec db mysql -ularavel_user -plaravel_password -e "SELECT 1;" &> /dev/null || [ $counter -eq $timeout ]; do
-        printf "."
-        sleep 2
-        counter=$((counter + 1))
-    done
+    if [ "${DEV_MODE}" = true ]; then
+        # For development mode, use the db service name from docker-compose.dev.yml
+        until docker compose -f docker-compose.dev.yml exec db mysql -ularavel_user -plaravel_password -e "SELECT 1;" &> /dev/null || [ $counter -eq $timeout ]; do
+            printf "."
+            sleep 2
+            counter=$((counter + 1))
+        done
+    else
+        # For production mode, use the default docker-compose.yml
+        until docker compose exec db mysql -ularavel_user -plaravel_password -e "SELECT 1;" &> /dev/null || [ $counter -eq $timeout ]; do
+            printf "."
+            sleep 2
+            counter=$((counter + 1))
+        done
+    fi
     
     if [ $counter -eq $timeout ]; then
         echo ""
@@ -152,6 +162,14 @@ run_migrations() {
 seed_database() {
     echo ""
     echo "🌱 Seeding database..."
+    
+    # First, run all migrations to ensure all tables and columns exist
+    echo "Running all migrations to ensure schema is up to date..."
+    if [ "${DEV_MODE}" = true ]; then
+        docker compose -f docker-compose.dev.yml exec app php artisan migrate --force
+    else
+        docker compose exec app php artisan migrate --force
+    fi
     
     echo "1. Running default seeder..."
     if [ "${DEV_MODE}" = true ]; then

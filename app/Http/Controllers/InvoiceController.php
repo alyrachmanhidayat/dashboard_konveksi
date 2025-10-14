@@ -78,46 +78,42 @@ class InvoiceController extends Controller
     public function publishInvoice(Request $request)
     {
         $request->validate([
-            'selected_spk_ids' => 'required|array|min:1',
+            'selected_spk_ids' => 'required|integer', // Changed from array to single integer
         ]);
 
-        $selectedSpks = Spk::whereIn('id', $request->selected_spk_ids)
+        $selectedSpk = Spk::where('id', $request->selected_spk_ids)
             ->where('status', 'Closed')
-            ->get();
+            ->first();
 
-        if ($selectedSpks->isEmpty()) {
+        if (!$selectedSpk) {
             return redirect()->back()->with('error', 'Tidak ada SPK yang valid untuk diterbitkan invoice.');
         }
 
         DB::beginTransaction();
         try {
-            $createdInvoiceIds = [];
-            foreach ($selectedSpks as $spk) {
-                if (is_null($spk->price_per_meter) || is_null($spk->total_meter)) {
-                    throw new \Exception("SPK #{$spk->spk_number} belum memiliki harga/meter atau total meter.");
-                }
-                $totalAmount = $spk->total_meter * $spk->price_per_meter;
-                $invoiceNumber = $this->generateInvoiceNumber();
-
-                $invoice = Invoice::create([
-                    'invoice_number' => $invoiceNumber,
-                    'spk_id' => $spk->id,
-                    'customer_name' => $spk->customer_name,
-                    'order_name' => $spk->order_name,
-                    'total_qty' => $spk->total_qty,
-                    'total_amount' => $totalAmount,
-                ]);
-
-                $createdInvoiceIds[] = $invoice->id;
+            if (is_null($selectedSpk->price_per_meter) || is_null($selectedSpk->total_meter)) {
+                throw new \Exception("SPK #{$selectedSpk->spk_number} belum memiliki harga/meter atau total meter.");
             }
+            $totalAmount = $selectedSpk->total_meter * $selectedSpk->price_per_meter;
+            $invoiceNumber = $this->generateInvoiceNumber();
+
+            $invoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
+                'spk_id' => $selectedSpk->id,
+                'customer_name' => $selectedSpk->customer_name,
+                'order_name' => $selectedSpk->order_name,
+                'total_qty' => $selectedSpk->total_qty,
+                'total_amount' => $totalAmount,
+            ]);
+
+            $createdInvoiceId = $invoice->id;
 
             DB::commit();
 
             // If redirect_to_print is true, redirect to print page
             // Jika user menekan tombol "Publish & Print"
-            if ($request->has('redirect_to_print') && !empty($createdInvoiceIds)) {
-                // Gabungkan array ID menjadi string dipisahkan koma (e.g., "1,2,3")
-                $invoiceIdsString = implode(',', $createdInvoiceIds);
+            if ($request->has('redirect_to_print') && $createdInvoiceId) {
+                $invoiceIdsString = $createdInvoiceId;
 
                 // Return JSON response with redirect URL for AJAX requests
                 if ($request->ajax() || $request->wantsJson()) {
@@ -142,6 +138,15 @@ class InvoiceController extends Controller
             return redirect()->route('invoice.index')->with('success', 'Invoice berhasil diterbitkan!');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Return JSON for AJAX requests or redirect for regular requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menerbitkan invoice. ' . $e->getMessage()
+                ], 500);
+            }
+            
             return redirect()->back()->with('error', 'Gagal menerbitkan invoice. ' . $e->getMessage());
         }
     }

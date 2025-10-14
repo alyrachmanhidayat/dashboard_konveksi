@@ -54,20 +54,33 @@ return new class extends Migration
             // Remove any potential duplicate usernames first
             $this->removeDuplicateUsernames();
             
-            // Check if unique constraint already exists
-            $indexExists = DB::select("
-                SELECT CONSTRAINT_NAME 
-                FROM information_schema.TABLE_CONSTRAINTS 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'users' 
-                AND CONSTRAINT_NAME = 'users_username_unique'
-                AND CONSTRAINT_TYPE = 'UNIQUE'
-            ");
-            
-            if (empty($indexExists)) {
-                Schema::table('users', function (Blueprint $table) {
-                    $table->unique('username');
-                });
+            // Check database type and handle unique constraint accordingly
+            if (DB::getDriverName() === 'mysql') {
+                // MySQL-specific code
+                $indexExists = DB::select("
+                    SELECT CONSTRAINT_NAME 
+                    FROM information_schema.TABLE_CONSTRAINTS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'users' 
+                    AND CONSTRAINT_NAME = 'users_username_unique'
+                    AND CONSTRAINT_TYPE = 'UNIQUE'
+                ");
+                
+                if (empty($indexExists)) {
+                    Schema::table('users', function (Blueprint $table) {
+                        $table->unique('username');
+                    });
+                }
+            } else {
+                // For SQLite and other databases, just add the unique constraint
+                // Check if it already exists first
+                $indexes = DB::select("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'users' AND sql LIKE '%username%' AND sql LIKE '%UNIQUE%'");
+                
+                if (empty($indexes)) {
+                    Schema::table('users', function (Blueprint $table) {
+                        $table->unique('username');
+                    });
+                }
             }
         }
     }
