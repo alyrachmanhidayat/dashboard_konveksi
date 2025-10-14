@@ -167,11 +167,9 @@
         function updateListInfo() {
             const info = document.getElementById('listjs-info');
             if (info) {
-                const total = spkCloseList.items.length;
-                const page = spkCloseList.page;
-                const i = spkCloseList.i;
-                const showing = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
+                const total = spkCloseList.visibleItems.length;
+                const all = spkCloseList.items.length;
+                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
         }
 

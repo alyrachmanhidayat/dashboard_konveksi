@@ -164,25 +164,6 @@
             },
         };
 
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info');
-            if (info) {
-                const total = piutangList.items.length;
-                const page = piutangList.page;
-                // Calculate showing count based on current page and items per page
-                let showing = 0;
-                if(total > 0) {
-                    const currentPage = piutangList.page || 1;
-                    const itemsPerPage = options.page || 10;
-                    const startIndex = (currentPage - 1) * itemsPerPage;
-                    const endIndex = Math.min(startIndex + itemsPerPage, total);
-                    showing = endIndex - startIndex;
-                }
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
-            }
-        }
-
         // Inisialisasi List.js
         var piutangList = new List('piutang-table-list', options);
 
@@ -211,11 +192,9 @@
         function updateListInfo() {
             const info = document.getElementById('listjs-info');
             if (info) {
-                const total = piutangList.items.length;
-                const page = piutangList.page;
-                const i = piutangList.i;
-                const showing = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
+                const total = piutangList.visibleItems.length;
+                const all = piutangList.items.length;
+                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
         }
         

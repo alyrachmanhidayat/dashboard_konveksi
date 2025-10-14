@@ -222,12 +222,9 @@
         function updateListInfo() {
             const info = document.getElementById('listjs-info-reject');
             if (info) {
-                const total = rejectList.items.length;
-                const page = rejectList.page;
-                const i = rejectList.i;
-                const showing = total === 0 ? 0 : Math.min((i + page - 1), total);
-                const start = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${start} sampai ${showing} dari ${total} data`;
+                const total = rejectList.visibleItems.length;
+                const all = rejectList.items.length;
+                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
         }
 

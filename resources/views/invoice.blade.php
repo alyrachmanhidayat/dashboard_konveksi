@@ -140,7 +140,7 @@
                 const i = invoiceList.i;
                 const showing = total === 0 ? 0 : Math.min((i + page - 1), total);
                 const start = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${start} sampai ${showing} dari ${total} data`;
+                info.textContent = `Menampilkan ${showing} dari ${total} data`;
             }
         }
 

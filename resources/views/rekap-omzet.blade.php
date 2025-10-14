@@ -220,12 +220,9 @@
         function updateListInfo() {
             const info = document.getElementById('listjs-info-omzet');
             if (info) {
-                const total = omzetList.items.length;
-                const page = omzetList.page;
-                const i = omzetList.i;
-                const showing = total === 0 ? 0 : Math.min((i + page - 1), total);
-                const start = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${start} sampai ${showing} dari ${total} data`;
+                const total = omzetList.visibleItems.length;
+                const all = omzetList.items.length;
+                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
         }
 

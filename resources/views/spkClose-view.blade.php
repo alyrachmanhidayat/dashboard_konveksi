@@ -117,19 +117,9 @@
         function updateListInfo() {
             const info = document.getElementById('listjs-info-public');
             if (info) {
-                const total = spkCloseViewList.items.length;
-                
-                // Calculate how many items are shown on the current page
-                let showing = 0;
-                if (total > 0) {
-                    const currentPage = spkCloseViewList.page || 1;
-                    const itemsPerPage = options.page;
-                    const startIndex = Math.max(0, (currentPage - 1) * itemsPerPage);
-                    const endIndex = Math.min(startIndex + itemsPerPage, total);
-                    showing = Math.max(0, endIndex - startIndex);
-                }
-                
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
+                const total = spkCloseViewList.visibleItems.length;
+                const all = spkCloseViewList.items.length;
+                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
         }
 
