@@ -131,8 +131,11 @@
                     </tbody>
                 </table>
             </div>
-            {{-- Kontainer untuk pagination List.js --}}
-            <ul class="pagination mt-3"></ul>
+            {{-- Informasi jumlah data dan pagination --}}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div id="listjs-info">Menampilkan 0 dari 0 data</div>
+                <ul class="pagination mb-0"></ul>
+            </div>
         </div>
         <div class="card-footer"></div>
     </div>
@@ -178,7 +181,21 @@
             if (activeItem) {
                 activeItem.classList.add('active');
             }
+            // Update pagination info when list is updated
+            updateListInfo();
         });
+        
+        // Fungsi untuk update info pagination
+        function updateListInfo() {
+            const info = document.getElementById('listjs-info');
+            if (info) {
+                const total = piutangList.items.length;
+                const page = piutangList.page;
+                const i = piutangList.i;
+                const showing = total === 0 ? 0 : i;
+                info.textContent = `Menampilkan ${showing} dari ${total} data`;
+            }
+        }
         
         // Update modal amount when input changes
         document.querySelectorAll('.amount-input').forEach(function(input) {

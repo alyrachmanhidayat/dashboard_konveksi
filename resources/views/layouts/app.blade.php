@@ -58,8 +58,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->is('spk*') ? 'active' : '' }}" href="{{ url('/spk') }}">
-                            <i class="fas fa-file-invoice"></i><span>SPK</span>
+                        <a class="nav-link {{ request()->is('spk') ? 'active' : '' }}" href="{{ url('/spk') }}">
+                            <i class="fas fa-file-invoice"></i><span>SPK Input</span>
                         </a>
                     </li>
                     <li class="nav-item">

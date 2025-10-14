@@ -84,17 +84,17 @@
 
                 <table class="summary-table">
                     <tr>
-                        <td>Sub Total</td>
+                        <td><strong>Total</strong></td>
                         <td>:</td>
-                        <td>{{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
+                        <td><strong>{{ number_format($invoice->remaining_amount, 0, ',', '.') }}</strong></td>
                     </tr>
                     <tr>
 
                     </tr>
                     <tr class="total-row">
-                        <td><strong>Total</strong></td>
-                        <td>:</td>
-                        <td><strong>{{ number_format($invoice->total_amount, 0, ',', '.') }}</strong></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
                 </table>
             </div>

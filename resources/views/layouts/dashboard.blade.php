@@ -120,6 +120,7 @@
                             <td class="progress" data-progress="{{ $spk->progressPercentage }}" style="min-height:max-content">
                                 <div class="progress mb-3 progress-sm" style="height: 25px; min-width: 100px; max-width: 150px;">
                                     <div class="progress-bar {{ $spk->progressBarColor }}" role="progressbar"
+                                        style="width: {{ $spk->progressPercentage }}%"
                                         data-width="{{ $spk->progressPercentage }}"
                                         aria-valuenow="{{ $spk->progressPercentage }}"
                                         aria-valuemin="0"
