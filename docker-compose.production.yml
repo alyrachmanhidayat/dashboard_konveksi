@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  app:
+    image: ryanaputra/dashboard-konveksi-prod:latest
+    container_name: dashboard-konveksi-app
+    ports:
+      - "8000:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=laravel
+      - DB_USERNAME=laravel_user
+      - DB_PASSWORD=laravel_password
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=base64:your-app-key-here
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./storage:/var/www/storage
+      - ./public:/var/www/public
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: dashboard-konveksi-db
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=laravel
+      - MYSQL_USER=laravel_user
+      - MYSQL_PASSWORD=laravel_password
+      - MYSQL_ROOT_PASSWORD=root_password
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: dashboard-konveksi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.1
+    container_name: dashboard-konveksi-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=db
+      - MYSQL_USER=laravel_user
+      - MYSQL_PASSWORD=laravel_password
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  redis_data:

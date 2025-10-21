@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AdminUserSeeder::class);
 
         // Run DummyDataSeeder to populate application data
-        $this->call(DummyDataSeeder::class);
+        // $this->call(DummyDataSeeder::class);
 
         // Create test user if not exists
         if (!User::where('email', 'test@example.com')->exists()) {
