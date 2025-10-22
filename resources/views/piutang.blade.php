@@ -21,14 +21,14 @@
 </div>
 @endif
 
-<div id="piutang-table-list">
+<div>
     <div class="card shadow">
         <div class="card-header"></div>
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6">
                     {{-- Input Pencarian --}}
-                    <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
+                    <input type="text" id="search-input" class="form-control" placeholder="Cari no invoice atau nama konsumen...">
                 </div>
                 <div class="col-md-6 text-md-end">
                     {{-- Form Filter Tanggal --}}
@@ -40,15 +40,10 @@
                             <a href="{{ route('piutang.index') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
                         </div>
                     </form>
-                    <br><br>
-                    {{-- Tombol Sort --}}
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                    <button class="btn btn-sm btn-outline-danger sort" data-sort="sisa-tagihan">Sisa Tagihan</button>
                 </div>
             </div>
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="piutang-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>No Invoice</th>
@@ -59,20 +54,17 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse ($invoices as $invoice)
                         <tr>
-                            {{-- Kita tidak bisa menaruh <form> di dalam <tr> jika <tbody> adalah target List.js --}}
-                            <!--  Jadi, setiap tombol bayar akan memiliki form-nya sendiri -->
-                            <td class="no-invoice">
+                            <td>
                                 <a href="{{ route('invoice.print', ['invoiceIds' => $invoice->id]) }}" target="_blank">
                                     {{ $invoice->invoice_number }}
                                 </a>
                             </td>
-                            <td class="konsumen">{{ $invoice->customer_name }}</td>
+                            <td>{{ $invoice->customer_name }}</td>
                             <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
-                            <td class="sisa-tagihan text-danger fw-bold" data-sisa-tagihan="{{ $invoice->remaining_amount }}">
+                            <td class="text-danger fw-bold">
                                 Rp. {{ number_format($invoice->remaining_amount, 0, ',', '.') }}
                             </td>
                             <td>
@@ -125,16 +117,16 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center">Tidak ada data piutang.</td>
+                            <td class="text-center" colspan="6">Tidak ada data piutang.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-            {{-- Informasi jumlah data dan pagination --}}
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div id="listjs-info">Menampilkan 0 dari 0 data</div>
-                <ul class="pagination mb-0"></ul>
             </div>
         </div>
         <div class="card-footer"></div>
@@ -144,59 +136,40 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Opsi untuk List.js
-        var options = {
-            valueNames: [
-                'no-invoice',
-                'konsumen',
-                {
-                    name: 'sisa-tagihan',
-                    attr: 'data-sisa-tagihan'
+        // Initialize DataTable
+        var table = $('#piutang-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 10,
-            pagination: {
-                innerWindow: 1,
-                outerWindow: 1,
-                paginationClass: "pagination", // Nama class untuk <ul>
-            },
-        };
-
-        // Inisialisasi List.js
-        var piutangList = new List('piutang-table-list', options);
-
-        // Update pagination info initially and after each update
-        setTimeout(updateListInfo, 100); // Additional delay to ensure items are loaded
-
-        // Tambahkan class Bootstrap ke pagination yang digenerate List.js
-        piutangList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) {
-                    link.classList.add('page-link');
-                }
-            });
-            const activeItem = document.querySelector('.pagination li.active');
-            if (activeItem) {
-                activeItem.classList.add('active');
             }
-            // Update pagination info when list is updated
-            updateListInfo();
         });
-        
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info');
-            if (info) {
-                const total = piutangList.visibleItems.length;
-                const all = piutangList.items.length;
-                info.textContent = `Menampilkan ${total} dari ${all} data`;
-            }
-        }
+
+        // Update search when typing in the custom search input
+        $('#search-input').on('keyup', function() {
+            table.search(this.value).draw();
+        });
         
         // Update modal amount when input changes
         document.querySelectorAll('.amount-input').forEach(function(input) {

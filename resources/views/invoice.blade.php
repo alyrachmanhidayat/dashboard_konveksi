@@ -22,25 +22,12 @@
 
 <form id="publish-form" action="{{ route('invoice.publish') }}" method="POST">
     @csrf
-    <div id="invoice-list">
+    <div>
         <div class="card shadow">
             <div class="card-header"></div>
             <div class="card-body">
-                {{-- Kontrol untuk List.js --}}
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control search" placeholder="Cari no order atau nama konsumen...">
-                    </div>
-                    <div class="col-md-8 text-md-end">
-                        <span class="me-2">Urutkan berdasarkan:</span>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="no-order">No Order</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="nilai">Nilai</button>
-                    </div>
-                </div>
-
                 <div class="table-responsive mt-2">
-                    <table class="table my-0">
+                    <table id="invoice-table" class="table table-striped">
                         <thead>
                             <tr>
                                 <th>No Order</th>
@@ -51,17 +38,15 @@
                                 <th>Pilih</th>
                             </tr>
                         </thead>
-                        {{-- Beri class="list" pada tbody --}}
-                        <tbody class="list">
+                        <tbody>
                             @forelse($spkList as $spk)
                                 @if($spk->status == 'Closed' && $spk->price_per_meter && $spk->total_meter)
                             <tr>
-                                {{-- Tambahkan class untuk valueNames List.js --}}
-                                <td class="no-order">{{ $spk->spk_number }}</td>
-                                <td class="konsumen">{{ $spk->customer_name }}</td>
+                                <td>{{ $spk->spk_number }}</td>
+                                <td>{{ $spk->customer_name }}</td>
                                 <td>{{ $spk->order_name }}</td>
                                 <td>{{ $spk->total_qty }}</td>
-                                <td class="nilai" data-nilai="{{ $spk->total_meter * $spk->price_per_meter }}">Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}</td>
+                                <td>Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}</td>
                                 <td class="text-center">
                                     <input type="radio" class="form-check-input" name="selected_spk_ids" value="{{ $spk->id }}" onchange="toggleSubmitButton()">
                                 </td>
@@ -74,23 +59,18 @@
                                     });
                                 @endphp
                                 @if($filteredSpkList->count() == 0)
-                                <tr>
-                                    <td colspan="6" class="text-center">Belum ada SPK yang siap diterbitkan invoice.</td>
-                                </tr>
+                            <tr>
+                                <td class="text-center" colspan="6">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                            </tr>
                                 @endif
                             @endforelse
                         </tbody>
                     </table>
-                </div>
-
-                {{-- Kontainer untuk pagination List.js --}}
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <p id="listjs-info-invoice"></p>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="pagination justify-content-end"></ul>
-                    </div>
                 </div>
             </div>
             <div class="card-footer">
@@ -110,52 +90,34 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Opsi untuk List.js
-        var options = {
-            valueNames: [
-                'no-order',
-                'konsumen',
-                {
-                    name: 'nilai',
-                    attr: 'data-nilai'
+        // Initialize DataTable
+        $('#invoice-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 10,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        // Inisialisasi List.js
-        var invoiceList = new List('invoice-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info-invoice');
-            if (info) {
-                const total = invoiceList.items.length;
-                const page = invoiceList.page;
-                const i = invoiceList.i;
-                const showing = total === 0 ? 0 : Math.min((i + page - 1), total);
-                const start = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
             }
-        }
-
-        // Panggil saat pertama kali dan setiap kali list diupdate
-        updateListInfo();
-        invoiceList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        invoiceList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
         });
         
         // Initialize button state on page load

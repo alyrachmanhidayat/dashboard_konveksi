@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&amp;display=swap">
     <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome-all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/bss-overrides.css') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.css">
     <style>
         #wrapper {
             display: flex;
@@ -228,15 +229,13 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Bootstrap core JavaScript-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- SB Admin core JavaScript-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/startbootstrap-sb-admin-2/4.1.4/js/sb-admin-2.min.js"></script>
-    <!-- list JS -->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/startbootstrap-sb-admin-2/4.1.4/js/sb-admin-2.min.js"></script>
+    
     <script>
-        // Live clock functionality
+        // Live clock functionality... (Code tetap sama)
         function updateClock() {
             const now = new Date();
             const dateOptions = {
@@ -265,8 +264,8 @@
         setInterval(updateClock, 1000);
     </script>
 
-    <!-- Password Change JavaScript -->
     <script>
+        // ... (Kode Ganti Password tetap di sini)
         $(document).ready(function() {
             // Handle password change button click
             $('#changePasswordBtn').on('click', function() {

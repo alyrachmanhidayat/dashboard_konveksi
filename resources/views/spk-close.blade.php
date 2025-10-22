@@ -25,24 +25,12 @@
 @endif
 
 {{-- Table --}}
-<div id="spk-close-list">
+<div>
     <div class="card shadow">
         <div class="card-header"></div>
         <div class="card-body">
-            {{-- KONTROL UNTUK LIST.JS (SEARCH & SORT) --}}
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control search" placeholder="Cari kode order atau nama konsumen...">
-                </div>
-                <div class="col-md-8 text-md-end">
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="tanggal">Tanggal Close</button>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                </div>
-            </div>
-
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="spk-close-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Kode Order</th>
@@ -56,8 +44,7 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @php
                         $filteredSpkList = $closedSpkList->filter(function($spk) {
                         return empty($spk->price_per_meter);
@@ -65,10 +52,9 @@
                         @endphp
                         @forelse ($filteredSpkList as $spk)
                         <tr id="spk-row-{{ $spk->id }}">
-                            {{-- Tambahkan class untuk valueNames List.js --}}
-                            <td class="kode-order">{{ $spk->spk_number }}</td>
-                            <td class="tanggal" data-tanggal="{{ $spk->closed_date }}">{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
-                            <td class="konsumen">{{ $spk->customer_name }}</td>
+                            <td>{{ $spk->spk_number }}</td>
+                            <td>{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
+                            <td>{{ $spk->customer_name }}</td>
                             <td>{{ $spk->order_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
@@ -119,20 +105,19 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td class="text-center" colspan="9">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-            {{-- KONTENER UNTUK PAGINATION LIST.JS --}}
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <p id="listjs-info"></p>
-                </div>
-                <div class="col-md-6">
-                    <ul class="pagination justify-content-end"></ul>
-                </div>
             </div>
         </div>
         <div class="card-footer"></div>
@@ -142,49 +127,34 @@
 @endsection
 
 @push('scripts')
-{{-- KODE SCRIPT ANDA TIDAK SAYA UBAH --}}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
-    // Inisialisasi List.js
     document.addEventListener('DOMContentLoaded', function() {
-        var options = {
-            valueNames: [
-                'kode-order',
-                'konsumen',
-                {
-                    name: 'tanggal',
-                    attr: 'data-tanggal'
+        // Initialize DataTable
+        $('#spk-close-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 5,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        var spkCloseList = new List('spk-close-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info');
-            if (info) {
-                const total = spkCloseList.visibleItems.length;
-                const all = spkCloseList.items.length;
-                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
-        }
-
-        // Panggil saat pertama kali dan setiap kali list diupdate
-        updateListInfo();
-        spkCloseList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        spkCloseList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
         });
 
         // Function to show notification using the same style as project alerts

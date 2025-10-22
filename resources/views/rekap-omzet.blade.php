@@ -78,19 +78,19 @@
 
 
 {{-- Table --}}
-<div id="rekap-omzet-list">
+<div>
     <div class="card shadow">
         <div class="card-header">
             <h6 class="text-primary fw-bold m-0">Detail Omzet Keseluruhan</h6>
         </div>
         <div class="card-body">
 
-            {{-- Filter Form & List.js Controls --}}
+            {{-- Filter Form --}}
             <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
+                <div class="col-md-6">
+                    <input type="text" id="search-input-omzet" class="form-control" placeholder="Cari no invoice atau nama konsumen...">
                 </div>
-                <div class="col-md-8 text-md-end">
+                <div class="col-md-6 text-md-end">
                     {{-- Form Filter Tanggal --}}
                     <form method="GET" action="{{ route('rekap-omzet') }}" class="d-inline-block me-2">
                         <div class="input-group">
@@ -100,18 +100,11 @@
                             <a href="{{ route('rekap-omzet') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
                         </div>
                     </form>
-
-                    {{-- Tombol Sort List.js --}}
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="no-invoice">No Invoice</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="nominal">Nominal</button>
-                    </div>
                 </div>
             </div>
 
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="rekap-omzet-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Nomor Invoice</th>
@@ -121,34 +114,26 @@
                             <th>Nominal</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse ($invoices as $invoice)
                         <tr>
-                            {{-- Tambahkan class untuk valueNames List.js --}}
-                            <td class="no-invoice">{{ $invoice->invoice_number }}</td>
-                            <td class="konsumen">{{ $invoice->customer_name }}</td>
+                            <td>{{ $invoice->invoice_number }}</td>
+                            <td>{{ $invoice->customer_name }}</td>
                             <td>{{ $invoice->total_qty }}</td>
                             <td>{{ $invoice->spk ? $invoice->spk->total_meter : 'N/A' }}</td>
-                            <td class="nominal" data-nominal="{{ $invoice->total_amount }}">Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
+                            <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
+                            <td class="text-center" colspan="5">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            {{-- Kontainer untuk pagination List.js --}}
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <p id="listjs-info-omzet"></p>
-                </div>
-                <div class="col-md-6">
-                    <ul class="pagination justify-content-end"></ul>
-                </div>
             </div>
         </div>
     </div>
@@ -156,8 +141,13 @@
 @endsection
 
 @push('scripts')
-{{-- Chart.js & List.js --}}
+{{-- Chart.js & DataTables --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // ... (Kode Chart.js Anda tetap sama dan tidak diubah)
@@ -198,46 +188,32 @@
             });
         }
 
-        // Inisialisasi List.js untuk tabel detail omzet
-        var options = {
-            valueNames: [
-                'no-invoice',
-                'konsumen',
-                {
-                    name: 'nominal',
-                    attr: 'data-nominal'
+        // Initialize DataTable
+        var table = $('#rekap-omzet-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 10,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        var omzetList = new List('rekap-omzet-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info-omzet');
-            if (info) {
-                const total = omzetList.visibleItems.length;
-                const all = omzetList.items.length;
-                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
-        }
+        });
 
-        // Panggil saat pertama kali dan setiap kali list diupdate
-        updateListInfo();
-        omzetList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        omzetList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
+        // Update search when typing in the custom search input
+        $('#search-input-omzet').on('keyup', function() {
+            table.search(this.value).draw();
         });
     });
 </script>

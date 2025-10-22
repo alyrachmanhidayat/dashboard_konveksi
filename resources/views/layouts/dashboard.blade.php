@@ -67,28 +67,14 @@
     </div>
 </div>
 
-<div id="spk-table-list">
+<div>
     <div class="card shadow">
         <div class="card-header py-3">
             <p class="text-primary m-0 fw-bold">Dashboard</p>
         </div>
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    {{-- Input Pencarian --}}
-                    <input type="text" class="form-control search" placeholder="Cari konsumen atau nama order...">
-                </div>
-                <div class="col-md-8 text-md-end">
-                    {{-- Tombol Sort --}}
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="deadline">Deadline</button>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="progress">Progress</button>
-                </div>
-            </div>
-
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="spk-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Deadline</th>
@@ -100,28 +86,25 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse($spkList as $spk)
                         <tr>
-                            {{-- Beri class pada elemen yang ingin di-sort/search --}}
-                            <td>
-                                {{-- Atribut data-deadline digunakan untuk sorting --}}
-                                <div class="{{ $spk->bgColor }} text-white p-2 rounded deadline" data-deadline="{{ $spk->delivery_date }}">
+                            <td data-order="{{ $spk->formatted_delivery_date }}">
+                                <span class="{{ $spk->bgColor }} text-white p-2 rounded">
                                     <i class="far fa-clock"></i>
                                     <span>{{ $spk->formatted_delivery_date }}</span>
-                                </div>
+                                </span>
                             </td>
-                            <td class="konsumen">{{ $spk->customer_name }}</td>
-                            <td class="nama-order">{{ $spk->order_name }}</td>
+                            <td>{{ $spk->customer_name }}</td>
+                            <td>{{ $spk->order_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
-                            {{-- Atribut data-progress digunakan untuk sorting --}}
-                            <td class="progress" data-progress="{{ $spk->progressPercentage }}" style="min-height:max-content">
+                            <td data-order="{{ $spk->progressPercentage }}">
                                 <div class="progress mb-3 progress-sm" style="height: 25px; min-width: 100px; max-width: 150px;">
                                     <div class="progress-bar {{ $spk->progressBarColor }}" role="progressbar"
+                                        data-bs-toggle="tooltip"
+                                        title="{{ $spk->progressPercentage }}%"
                                         style="width: {{ $spk->progressPercentage }}%"
-                                        data-width="{{ $spk->progressPercentage }}"
                                         aria-valuenow="{{ $spk->progressPercentage }}"
                                         aria-valuemin="0"
                                         aria-valuemax="100">
@@ -129,18 +112,16 @@
                                     </div>
                                 </div>
                             </td>
-                            <td style="text-align: center;"><a class="nav-link" href="{{ route('spk.edit', $spk->id) }}">Opsi</a></td>
+                            <td><a class="btn btn-sm btn-outline-primary" href="{{ route('spk.edit', $spk->id) }}">Opsi</a></td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">Belum ada order yang tersedia.</td>
+                            <td class="text-center" colspan="7">Belum ada order yang tersedia.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            {{-- List.js akan otomatis menangani pagination jika diaktifkan --}}
-            <div id="pagination-container" class="mt-3"> </div>
         </div>
         <div class="card-footer"></div>
     </div>
@@ -148,63 +129,51 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     // Auto-refresh functionality - refresh the page every 30 seconds
-    setInterval(function() {
-        location.reload();
-    }, 30000); // 30 seconds (30000 milliseconds)
+    // setInterval(function() {
+    //     location.reload();
+    // }, 30000); // 30 seconds (30000 milliseconds)
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Opsi untuk List.js
-        var options = {
-            // valueNames adalah array berisi class dari elemen yang ingin kita cari/sort
-            valueNames: [
-                'konsumen',
-                'nama-order',
-                {
-                    name: 'deadline',
-                    attr: 'data-deadline'
-                }, // Sort berdasarkan atribut data-deadline
-                {
-                    name: 'progress',
-                    attr: 'data-progress'
-                } // Sort berdasarkan atribut data-progress
-            ],
-            // Aktifkan pagination
-            page: 10, // Tampilkan 10 item per halaman
-            pagination: [{
-                name: "pagination",
-                item: '<li class="page-item"><a class="page-link" href="#"></a></li>'
-            }]
-        };
-
-        // Inisialisasi List.js
-        var spkList = new List('spk-table-list', options);
-
-        // Tambahkan class Bootstrap ke pagination yang digenerate List.js
-        spkList.on('updated', function(list) {
-            const paginationUl = document.querySelector('.pagination');
-            if (paginationUl) {
-                paginationUl.classList.add('justify-content-end');
+        // Initialize DataTable with proper column configuration
+        $('#spk-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
+                }
             }
         });
 
-        // Set progress bar widths using data attributes
+        // Set progress bar widths
         function setProgressBarWidths() {
             const progressBars = document.querySelectorAll('.progress-bar');
             progressBars.forEach(function(bar) {
-                const width = bar.getAttribute('data-width');
+                const width = bar.getAttribute('aria-valuenow');
                 bar.style.width = width + '%';
             });
         }
 
         // Set initial widths when page loads
         setProgressBarWidths();
-
-        // Auto-refresh functionality - refresh the page every 30 seconds
-        setInterval(function() {
-            location.reload();
-        }, 30000); // 30 seconds (30000 milliseconds)
     });
 </script>
 @endpush

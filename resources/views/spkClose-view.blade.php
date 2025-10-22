@@ -24,24 +24,12 @@
 </div>
 @endif
 
-<div id="spk-close-view-list">
+<div>
     <div class="card shadow">
         <div class="card-header"></div>
         <div class="card-body">
-            {{-- Kontrol untuk List.js --}}
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control search" placeholder="Cari kode order atau nama konsumen...">
-                </div>
-                <div class="col-md-8 text-md-end">
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="tanggal">Tanggal Close</button>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                </div>
-            </div>
-
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="spk-close-view-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Kode Order</th>
@@ -53,14 +41,12 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse ($closedSpkList as $spk)
                         <tr>
-                            {{-- Tambahkan class untuk valueNames List.js --}}
-                            <td class="kode-order">{{ $spk->spk_number }}</td>
-                            <td class="tanggal" data-tanggal="{{ $spk->closed_date }}">{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
-                            <td class="konsumen">{{ $spk->customer_name }}</td>
+                            <td>{{ $spk->spk_number }}</td>
+                            <td>{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
+                            <td>{{ $spk->customer_name }}</td>
                             <td>{{ $spk->order_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
@@ -68,21 +54,17 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">Belum ada SPK yang ditutup atau ditolak.</td>
+                            <td class="text-center" colspan="7">Belum ada SPK yang ditutup atau ditolak.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            {{-- Kontainer untuk pagination List.js --}}
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <p id="listjs-info-public"></p>
-                </div>
-                <div class="col-md-6">
-                    <ul class="pagination justify-content-end"></ul>
-                </div>
             </div>
         </div>
         <div class="card-footer"></div>
@@ -92,49 +74,34 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Opsi untuk List.js
-        var options = {
-            valueNames: [
-                'kode-order',
-                'konsumen',
-                {
-                    name: 'tanggal',
-                    attr: 'data-tanggal'
+        // Initialize DataTable
+        $('#spk-close-view-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 10,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        // Inisialisasi List.js
-        var spkCloseViewList = new List('spk-close-view-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info-public');
-            if (info) {
-                const total = spkCloseViewList.visibleItems.length;
-                const all = spkCloseViewList.items.length;
-                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
-        }
-
-        // Panggil saat pertama kali dan setiap kali list diupdate
-        updateListInfo();
-        spkCloseViewList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        spkCloseViewList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
         });
     });
 </script>

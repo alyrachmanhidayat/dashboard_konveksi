@@ -78,19 +78,19 @@
 </div>
 
 {{-- Tabel --}}
-<div id="rekap-reject-list">
+<div>
     <div class="card shadow">
         <div class="card-header">
             <h6 class="text-primary fw-bold m-0">Detail Reject Keseluruhan</h6>
         </div>
         <div class="card-body">
 
-            {{-- Filter Form & List.js Controls --}}
+            {{-- Filter Form --}}
             <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control search" placeholder="Cari no SPK atau nama konsumen...">
+                <div class="col-md-6">
+                    <input type="text" id="search-input-reject" class="form-control" placeholder="Cari no SPK atau nama konsumen...">
                 </div>
-                <div class="col-md-8 text-md-end">
+                <div class="col-md-6 text-md-end">
                     {{-- Form Filter Tanggal --}}
                     <form method="GET" action="{{ route('rekap-reject') }}" class="d-inline-block me-2">
                         <div class="input-group">
@@ -100,18 +100,11 @@
                             <a href="{{ route('rekap-reject') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
                         </div>
                     </form>
-
-                    {{-- Tombol Sort List.js --}}
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="no-spk">No SPK</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                        <button class="btn btn-sm btn-outline-primary sort" data-sort="nominal">Nominal</button>
-                    </div>
                 </div>
             </div>
 
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="rekap-reject-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Nomor SPK</th>
@@ -121,37 +114,29 @@
                             <th>Nominal Kerugian</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse ($rejectedSpks as $spk)
                         <tr>
-                            {{-- Tambahkan class untuk valueNames List.js --}}
-                            <td class="no-spk">{{ $spk->spk_number }}</td>
-                            <td class="konsumen">{{ $spk->customer_name }}</td>
+                            <td>{{ $spk->spk_number }}</td>
+                            <td>{{ $spk->customer_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
                             @php
                             $nominal = $spk->price_per_meter ? ($spk->total_meter * $spk->price_per_meter) : 0;
                             @endphp
-                            <td class="nominal" data-nominal="{{ $nominal }}">Rp. {{ number_format($nominal, 0, ',', '.') }}</td>
+                            <td>Rp. {{ number_format($nominal, 0, ',', '.') }}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center">Tidak ada data reject pada rentang tanggal yang dipilih.</td>
+                            <td class="text-center" colspan="5">Tidak ada data reject pada rentang tanggal yang dipilih.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-
-            {{-- Kontainer untuk pagination List.js --}}
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <p id="listjs-info-reject"></p>
-                </div>
-                <div class="col-md-6">
-                    <ul class="pagination justify-content-end"></ul>
-                </div>
             </div>
         </div>
     </div>
@@ -160,6 +145,11 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // ... (Kode Chart.js Anda tetap sama dan tidak diubah)
@@ -200,45 +190,32 @@
             });
         }
 
-        // Inisialisasi List.js untuk tabel detail reject
-        var options = {
-            valueNames: [
-                'no-spk',
-                'konsumen',
-                {
-                    name: 'nominal',
-                    attr: 'data-nominal'
+        // Initialize DataTable
+        var table = $('#rekap-reject-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": false,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 10,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        var rejectList = new List('rekap-reject-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info-reject');
-            if (info) {
-                const total = rejectList.visibleItems.length;
-                const all = rejectList.items.length;
-                info.textContent = `Menampilkan ${total} dari ${all} data`;
             }
-        }
+        });
 
-        updateListInfo();
-        rejectList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        rejectList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
+        // Update search when typing in the custom search input
+        $('#search-input-reject').on('keyup', function() {
+            table.search(this.value).draw();
         });
     });
 </script>
