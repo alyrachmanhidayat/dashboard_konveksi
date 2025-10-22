@@ -6,7 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SpkController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\RekapController; // Jika Anda sudah membuatnya
+use App\Http\Controllers\RekapController;
 
 
 // =========================================================================

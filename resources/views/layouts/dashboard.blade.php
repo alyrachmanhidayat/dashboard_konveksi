@@ -117,6 +117,12 @@
                         @empty
                         <tr>
                             <td class="text-center" colspan="7">Belum ada order yang tersedia.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
