@@ -72,6 +72,7 @@
         <div class="card-header py-3">
             <p class="text-primary m-0 fw-bold">Dashboard</p>
         </div>
+        
         <div class="card-body">
             <div class="table-responsive mt-2">
                 <table id="spk-table" class="table table-striped">
@@ -140,10 +141,16 @@
 <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
 
 <script>
-    // Auto-refresh functionality - refresh the page every 30 seconds
-    // setInterval(function() {
-    //     location.reload();
-    // }, 30000); // 30 seconds (30000 milliseconds)
+    // Auto-refresh functionality - refresh the page every 30 seconds (disabled on mobile devices)
+    function isMobileDevice() {
+        return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+    }
+
+    if (!isMobileDevice()) {
+        setInterval(function() {
+            location.reload();
+        }, 30000); // 30 seconds (30000 milliseconds)
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize DataTable with proper column configuration

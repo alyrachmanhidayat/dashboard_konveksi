@@ -2,9 +2,9 @@
 
 @section('content')
 {{-- invoice --}}
-<div class="d-sm-flex justify-content-between align-items-center mb-4">
+<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Terbitkan Invoice</h3>
-</div>
+</div> -->
 
 {{-- notif alert --}}
 @if (session('success'))
@@ -24,7 +24,10 @@
     @csrf
     <div>
         <div class="card shadow">
-            <div class="card-header"></div>
+        <div class="card-header py-3">
+            <h4 class="text-primary m-0 fw-bold">Terbitkan Invoice</h4>
+        </div>
+            
             <div class="card-body">
                 <div class="table-responsive mt-2">
                     <table id="invoice-table" class="table table-striped">
@@ -34,33 +37,51 @@
                                 <th>Nama Konsumen</th>
                                 <th>Nama Order</th>
                                 <th>QTY</th>
+                                <th>Meter</th>
+                                <th>Harga @ Meter</th>
+                                <th>Harga @ QTY/Piece</th>
                                 <th>Nilai</th>
                                 <th>Pilih</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($spkList as $spk)
-                                @if($spk->status == 'Closed' && $spk->price_per_meter && $spk->total_meter)
-                            <tr>
+                                @if($spk->status == 'Closed' && ($spk->price_per_meter || $spk->harga_per_piece))
+                            <tr id="spk-row-{{ $spk->id }}">
                                 <td>{{ $spk->spk_number }}</td>
                                 <td>{{ $spk->customer_name }}</td>
                                 <td>{{ $spk->order_name }}</td>
                                 <td>{{ $spk->total_qty }}</td>
-                                <td>Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}</td>
+                                <td>{{ $spk->total_meter ?? 'N/A' }}</td>
+                                <td>{{ $spk->price_per_meter ? 'Rp. ' . number_format($spk->price_per_meter, 0, ',', '.') : 'N/A' }}</td>
+                                <td>{{ $spk->harga_per_piece ? 'Rp. ' . number_format($spk->harga_per_piece, 0, ',', '.') : 'N/A' }}</td>
+                                <td>
+                                    @if($spk->price_per_meter && $spk->harga_per_piece)
+                                        Meter: Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}<br>
+                                        Pieces: Rp. {{ number_format($spk->total_qty * $spk->harga_per_piece, 0, ',', '.') }}
+                                    @elseif($spk->price_per_meter)
+                                        Meter: Rp. {{ number_format($spk->total_meter * $spk->price_per_meter, 0, ',', '.') }}
+                                    @elseif($spk->harga_per_piece)
+                                        Pieces: Rp. {{ number_format($spk->total_qty * $spk->harga_per_piece, 0, ',', '.') }}
+                                    @endif
+                                </td>
                                 <td class="text-center">
-                                    <input type="radio" class="form-check-input" name="selected_spk_ids" value="{{ $spk->id }}" onchange="toggleSubmitButton()">
+                                    <input type="radio" class="form-check-input" name="selected_spk_ids" value="{{ $spk->id }}" data-spk-id="{{ $spk->id }}" onchange="toggleSubmitButton()">
                                 </td>
                             </tr>
                                 @endif
                             @empty
                                 @php
                                     $filteredSpkList = $spkList->filter(function($spk) {
-                                        return $spk->status == 'Closed' && $spk->price_per_meter && $spk->total_meter;
+                                        return $spk->status == 'Closed' && ($spk->price_per_meter || $spk->harga_per_piece);
                                     });
                                 @endphp
                                 @if($filteredSpkList->count() == 0)
                             <tr>
-                                <td class="text-center" colspan="6">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td class="text-center" colspan="9">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
                                 <td style="display: none;"></td>
                                 <td style="display: none;"></td>
                                 <td style="display: none;"></td>
@@ -75,7 +96,7 @@
             </div>
             <div class="card-footer">
                 <div class="text-end py-2">
-                    <!-- <button class="btn btn-success" type="submit">Terbitkan Invoice Terpilih</button> -->
+                    <!-- <button class=\"btn btn-success\" type=\"submit\">Terbitkan Invoice Terpilih</button> -->
 
                     {{-- Changed from inline JavaScript to form submission with redirect_to_print flag and open in new tab --}}
                     <button type="submit" class="btn btn-info" name="redirect_to_print" value="1" formtarget="_blank" id="submit-btn" disabled>
@@ -184,9 +205,39 @@
         })
         .then(response => response.json())
         .then(data => {
+            // Get the selected SPK ID to remove the row
+            const selectedSpkId = selectedRadio.value;
+            
             if (data.redirect) {
                 // Open the print page in a new window
                 window.open(data.redirect, '_blank');
+                
+                // Remove the row with fade effect
+                const row = document.getElementById('spk-row-' + selectedSpkId);
+                if (row) {
+                    row.style.transition = 'opacity 0.5s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        // Check if table is empty and show "no data" message
+                        const tableBody = document.querySelector('#invoice-table tbody');
+                        if (tableBody && tableBody.querySelectorAll('tr').length === 0) {
+                            const noDataRow = document.createElement('tr');
+                            noDataRow.innerHTML = `
+                                <td class="text-center" colspan="9">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                            `;
+                            tableBody.appendChild(noDataRow);
+                        }
+                    }, 500);
+                }
                 
                 // Show success message
                 const successAlert = document.createElement('div');
@@ -198,11 +249,93 @@
                 `;
                 document.body.appendChild(successAlert);
 
-                // Refresh the page after 3 seconds to update the table
+                // Auto-dismiss alert after 5 seconds
                 setTimeout(() => {
-                    location.reload();
-                }, 3000);
-            } else if (data.message) {
+                    const alertElement = document.getElementById('successAlert');
+                    if (alertElement) {
+                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            } else if (data.invoice_ids && data.invoice_ids.length > 0) {
+                // Handle multiple invoice IDs by opening each in a separate tab
+                data.invoice_ids.forEach(invoiceId => {
+                    const printUrl = `{{ route("invoice.print", ["invoiceIds" => "ID_PLACEHOLDER"]) }}`.replace('ID_PLACEHOLDER', invoiceId);
+                    window.open(printUrl, '_blank');
+                });
+                
+                // Remove the row with fade effect
+                const row = document.getElementById('spk-row-' + selectedSpkId);
+                if (row) {
+                    row.style.transition = 'opacity 0.5s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        // Check if table is empty and show "no data" message
+                        const tableBody = document.querySelector('#invoice-table tbody');
+                        if (tableBody && tableBody.querySelectorAll('tr').length === 0) {
+                            const noDataRow = document.createElement('tr');
+                            noDataRow.innerHTML = `
+                                <td class="text-center" colspan="9">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                            `;
+                            tableBody.appendChild(noDataRow);
+                        }
+                    }, 500);
+                }
+                
+                const successAlert = document.createElement('div');
+                successAlert.innerHTML = `
+                    <div id="successAlert" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
+                        <i class="fas fa-check-circle me-2"></i>${data.message || 'Invoice berhasil diterbitkan!'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                document.body.appendChild(successAlert);
+
+                // Auto-dismiss alert after 5 seconds
+                setTimeout(() => {
+                    const alertElement = document.getElementById('successAlert');
+                    if (alertElement) {
+                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            } else if (data.message || data.success) {
+                // Remove the row with fade effect
+                const row = document.getElementById('spk-row-' + selectedSpkId);
+                if (row) {
+                    row.style.transition = 'opacity 0.5s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        // Check if table is empty and show "no data" message
+                        const tableBody = document.querySelector('#invoice-table tbody');
+                        if (tableBody && tableBody.querySelectorAll('tr').length === 0) {
+                            const noDataRow = document.createElement('tr');
+                            noDataRow.innerHTML = `
+                                <td class="text-center" colspan="9">Belum ada SPK yang siap diterbitkan invoice.</td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                                <td style="display: none;"></td>
+                            `;
+                            tableBody.appendChild(noDataRow);
+                        }
+                    }, 500);
+                }
+                
                 const messageAlert = document.createElement('div');
                 messageAlert.innerHTML = `
                     <div id="messageAlert" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
@@ -212,25 +345,14 @@
                 `;
                 document.body.appendChild(messageAlert);
 
-                // Refresh the page after 3 seconds to update the table
+                // Auto-dismiss alert after 5 seconds
                 setTimeout(() => {
-                    location.reload();
-                }, 3000);
-            } else {
-                // Handle other responses
-                const successAlert2 = document.createElement('div');
-                successAlert2.innerHTML = `
-                    <div id="successAlert2" class="alert alert-success alert-dismissible fade show fixed-top mt-3" role="alert" style="left: 50%; transform: translateX(-50%); max-width: 500px; z-index: 9999;">
-                        <i class="fas fa-check-circle me-2"></i>Invoice berhasil diterbitkan!
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
-                document.body.appendChild(successAlert2);
-
-                // Refresh the page after 3 seconds to update the table
-                setTimeout(() => {
-                    location.reload();
-                }, 3000);
+                    const alertElement = document.getElementById('messageAlert');
+                    if (alertElement) {
+                        const bsAlert = bootstrap.Alert.getInstance(alertElement) || new bootstrap.Alert(alertElement);
+                        bsAlert.close();
+                    }
+                }, 5000);
             }
         })
         .catch(error => {

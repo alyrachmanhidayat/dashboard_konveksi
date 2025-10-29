@@ -3,9 +3,9 @@
 @section('content')
 
 {{-- SPK-Close --}}
-<div class="d-sm-flex justify-content-between align-items-center mb-4">
+<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed</h3>
-</div>
+</div> -->
 
 {{-- Alert untuk notifikasi --}}
 @if (session('success'))
@@ -26,7 +26,9 @@
 
 <div>
     <div class="card shadow">
-        <div class="card-header"></div>
+        <div class="card-header py-3">
+            <h4 class="text-primary m-0 fw-bold">Surat Perintah Kerja (SPK) - Closed</h4>
+        </div>
         <div class="card-body">
             <div class="table-responsive mt-2">
                 <table id="spk-close-view-table" class="table table-striped">
@@ -39,6 +41,8 @@
                             <th>QTY</th>
                             <th>Meter</th>
                             <th>Status</th>
+                            <!-- <th>Harga @pieces</th>
+                            <th>Harga @meter</th> -->
                         </tr>
                     </thead>
                     <tbody>
@@ -51,6 +55,12 @@
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
                             <td class="text-white text-center {{ $spk->status == 'Closed' ? 'bg-success' : 'bg-danger' }}">{{ $spk->status }}</td>
+                            <!-- <td>
+                                {{ $spk->harga_per_piece ? 'Rp. ' . number_format($spk->harga_per_piece, 0, ',', '.') : 'Belum diisi' }}
+                            </td>
+                            <td>
+                                {{ $spk->price_per_meter ? 'Rp. ' . number_format($spk->price_per_meter, 0, ',', '.') : 'Belum diisi' }}
+                            </td> -->
                         </tr>
                         @empty
                         <tr>

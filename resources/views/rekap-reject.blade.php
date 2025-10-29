@@ -86,7 +86,7 @@
         <div class="card-body">
 
             {{-- Filter Form --}}
-            <div class="row mb-3">
+            <!-- <div class="row mb-3">
                 <div class="col-md-6">
                     <input type="text" id="search-input-reject" class="form-control" placeholder="Cari no SPK atau nama konsumen...">
                 </div>
@@ -101,12 +101,24 @@
                         </div>
                     </form>
                 </div>
+            </div> -->
+
+            <div class="row mb-3 d-flex justify-content-end">
+                <div class="col-md-6 text-md-start mt-2">
+                    {{-- Date Range Filter (Client-side with DataTables) --}}
+                    <div class="input-group">
+                        <input type="date" id="min-date" class="form-control form-control-sm" placeholder="Dari Tanggal" title="Dari Tanggal">
+                        <input type="date" id="max-date" class="form-control form-control-sm" placeholder="Sampai Tanggal" title="Sampai Tanggal">
+                        <button type="button" id="clear-filter" class="btn btn-sm btn-outline-primary" title="Hapus Filter">Clear</button>
+                    </div>
+                </div>
             </div>
 
             <div class="table-responsive mt-2">
                 <table id="rekap-reject-table" class="table table-striped">
                     <thead>
                         <tr>
+                            <th>Tanggal</th>
                             <th>Nomor SPK</th>
                             <th>Nama Konsumen</th>
                             <th>QTY</th>
@@ -117,6 +129,7 @@
                     <tbody>
                         @forelse ($rejectedSpks as $spk)
                         <tr>
+                            <td data-order="{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('Y-m-d') : '' }}">{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d/m/Y') : 'N/A' }}</td>
                             <td>{{ $spk->spk_number }}</td>
                             <td>{{ $spk->customer_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
@@ -128,7 +141,8 @@
                         </tr>
                         @empty
                         <tr>
-                            <td class="text-center" colspan="5">Tidak ada data reject pada rentang tanggal yang dipilih.</td>
+                            <td class="text-center" colspan="6">Tidak ada data reject pada rentang tanggal yang dipilih.</td>
+                            <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
@@ -190,15 +204,43 @@
             });
         }
 
+        // Custom date range filtering function for DataTables
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                var min = $('#min-date').val();
+                var max = $('#max-date').val();
+                var date = data[0]; // Date column is index 0 (first column)
+                
+                // Convert date from dd/mm/yyyy to yyyy-mm-dd for comparison
+                var dateParts = date.split('/');
+                if (dateParts.length === 3) {
+                    var dateStr = dateParts[2] + '-' + dateParts[1] + '-' + dateParts[0]; // yyyy-mm-dd
+                } else {
+                    return true; // If date format is invalid, show the row
+                }
+                
+                if (
+                    (min === '' && max === '') ||
+                    (min === '' && dateStr <= max) ||
+                    (min <= dateStr && max === '') ||
+                    (min <= dateStr && dateStr <= max)
+                ) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
         // Initialize DataTable
         var table = $('#rekap-reject-table').DataTable({
             "pageLength": 10,
             "lengthChange": true,
-            "searching": false,
+            "searching": true,
             "ordering": true,
             "info": true,
             "autoWidth": false,
             "responsive": true,
+            "order": [[0, 'desc']], // Sort by date column (descending)
             "language": {
                 "search": "Cari:",
                 "lengthMenu": "Tampilkan _MENU_ entri",
@@ -213,9 +255,16 @@
             }
         });
 
-        // Update search when typing in the custom search input
-        $('#search-input-reject').on('keyup', function() {
-            table.search(this.value).draw();
+        // Event listener for date inputs - redraw table when dates change
+        $('#min-date, #max-date').on('change', function() {
+            table.draw();
+        });
+
+        // Clear filter button
+        $('#clear-filter').on('click', function() {
+            $('#min-date').val('');
+            $('#max-date').val('');
+            table.draw();
         });
     });
 </script>

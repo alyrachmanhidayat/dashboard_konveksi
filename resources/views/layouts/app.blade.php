@@ -7,6 +7,10 @@
     <title>Dashboard - {{ config('app.name') }}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- icon -->
+    <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/logo_ISW-removebg.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('assets/img/logo_ISW-removebg.png') }}">
+
     <link rel="stylesheet" href="{{ asset('assets/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&amp;display=swap">
     <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome-all.min.css') }}">
@@ -45,13 +49,18 @@
         <!-- Sidebar -->
         <nav class="navbar navbar-dark align-items-start sidebar sidebar-dark accordion bg-gradient-primary p-0">
             <div class="container-fluid d-flex flex-column p-0">
-                <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand m-0" href="{{ url('/') }}">
-                    <div class="sidebar-brand-icon rotate-n-15"><i class="fas fa-tshirt"></i></div>
-                    <div class="sidebar-brand-text mx-3"><span>Dashboard<br>Konveksi</span></div>
+                <!-- Logo GIF -->
+                <a class="navbar-brand d-flex justify-content-center align-items-center sidebar-brand mt-3" href="{{ url('/') }}" style="width: 100%; padding: 0; margin: 0;">
+                    <div class="sidebar-brand-icon mt-4" style="width: 100%; padding: 0;">
+                        <img src="/assets/img/gif_isW.gif" alt="A GIF animation" loading="lazy" style="width: 100%; height: auto; display: block; margin: 0;">
+                    </div>
                 </a>
-                <hr class="sidebar-divider my-0">
 
-                <ul class="navbar-nav text-light" id="accordionSidebar">
+                <ul class="navbar-nav text-light mt-4" id="accordionSidebar">
+                    <hr class="sidebar-divider mt-4">
+                    <div class="sidebar-heading">
+                        PUBLIC AREA
+                    </div>
                     <!-- Menu untuk Semua User (Admin & User Biasa) -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->is('/') ? 'active' : '' }}" href="{{ url('/') }}">
@@ -183,7 +192,10 @@
                             <li class="nav-item my-auto me-3">
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button type="submit" class="btn btn-danger btn-sm">
+                                    <!-- <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                    </button> -->
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#logoutModal">
                                         <i class="fas fa-sign-out-alt me-1"></i>Logout
                                     </button>
                                 </form>
@@ -234,8 +246,32 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/startbootstrap-sb-admin-2/4.1.4/js/sb-admin-2.min.js"></script>
     
+    <!-- Logout Modal -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-black" id="logoutModalLabel">Konfirmasi Log Out</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-black">
+                    Anda Yakin Akan Log Out?
+                    <br>
+                    <small>Pastikan semua perubahan sudah disimpan!</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tidak</button>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="btn btn-danger">Ya, Log Out</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Live clock functionality... (Code tetap sama)
+        // Live clock functionality
         function updateClock() {
             const now = new Date();
             const dateOptions = {
@@ -265,7 +301,7 @@
     </script>
 
     <script>
-        // ... (Kode Ganti Password tetap di sini)
+        // Ganti Password
         $(document).ready(function() {
             // Handle password change button click
             $('#changePasswordBtn').on('click', function() {
@@ -388,7 +424,10 @@
                 $('#passwordChangeErrorMessage').remove();
             });
         });
+
     </script>
+
+
 
     @stack('scripts')
 </body>

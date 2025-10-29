@@ -3,9 +3,9 @@
 @section('content')
 
 {{-- SPK-Close --}}
-<div class="d-sm-flex justify-content-between align-items-center mb-4">
+<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed Admin</h3>
-</div>
+</div> -->
 
 {{-- Alert untuk notifikasi --}}
 @if (session('success'))
@@ -27,7 +27,10 @@
 {{-- Table --}}
 <div>
     <div class="card shadow">
-        <div class="card-header"></div>
+        <div class="card-header py-3">
+            <h4 class="text-primary m-0 fw-bold">Surat Perintah Kerja (SPK) - Closed Admin</h4>
+        </div>
+        
         <div class="card-body">
             <div class="table-responsive mt-2">
                 <table id="spk-close-table" class="table table-striped">
@@ -40,6 +43,7 @@
                             <th>QTY</th>
                             <th>Meter</th>
                             <th>Status</th>
+                            <th>Harga @pieces</th>
                             <th>Harga @meter</th>
                             <th>Action</th>
                         </tr>
@@ -47,7 +51,7 @@
                     <tbody>
                         @php
                         $filteredSpkList = $closedSpkList->filter(function($spk) {
-                        return empty($spk->price_per_meter);
+                        return empty($spk->price_per_meter) && empty($spk->harga_per_piece);
                         });
                         @endphp
                         @forelse ($filteredSpkList as $spk)
@@ -60,21 +64,24 @@
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
                             <td class="text-white text-center {{ $spk->status == 'Closed' ? 'bg-success' : 'bg-danger' }}">{{ $spk->status }}</td>
                             <td>
-                                <input type="number" step="1" class="form-control price-input" name="price_per_meter" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
+                                <input type="number" step="0.01" class="form-control price-input-pieces" name="harga_per_piece" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('harga_per_piece', $spk->harga_per_piece) }}">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" class="form-control price-input-meter" name="price_per_meter" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
                             </td>
                             <td class="text-center">
                                 <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control btn-save" type="button" data-spk-id="{{ $spk->id }}">Save</button>
 
-                                <!-- Modal save price for this specific SPK (KODE ANDA TETAP ADA) -->
+                                <!-- Modal save price for this specific SPK-->
                                 <div class="modal fade" id="saveModal{{ $spk->id }}" tabindex="-1" aria-labelledby="saveModalLabel{{ $spk->id }}" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="saveModalLabel{{ $spk->id }}">Konfirmasi Harga Kain</h1>
+                                                <h1 class="modal-title fs-5" id="saveModalLabel{{ $spk->id }}">Konfirmasi Harga</h1>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p>Apakah Anda yakin ingin menyimpan harga kain ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
+                                                <p>Apakah Anda yakin ingin menyimpan harga-harga ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
                                                 <div class="mb-3">
                                                     <label class="form-label"><strong>Kode Order:</strong></label>
                                                     <p class="form-control-plaintext">{{ $spk->spk_number }}</p>
@@ -89,13 +96,17 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label"><strong>Harga Per-Meter Kain:</strong></label>
-                                                    <p class="form-control-plaintext" id="modal-price-{{ $spk->id }}">{{ $spk->price_per_meter ?: 'Belum diisi' }}</p>
+                                                    <p class="form-control-plaintext" id="modal-price-meter-{{ $spk->id }}">{{ $spk->price_per_meter ?: 'Belum diisi' }}</p>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><strong>Harga Per-Piece Baju:</strong></label>
+                                                    <p class="form-control-plaintext" id="modal-price-pieces-{{ $spk->id }}">{{ $spk->harga_per_piece ?: 'Belum diisi' }}</p>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                                 <button type="button" class="btn btn-success btn-confirm-save" data-spk-id="{{ $spk->id }}" id="confirm-save-{{ $spk->id }}">
-                                                    <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga Kain
+                                                    <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga
                                                 </button>
                                             </div>
                                         </div>
@@ -105,7 +116,8 @@
                         </tr>
                         @empty
                         <tr>
-                            <td class="text-center" colspan="9">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td class="text-center" colspan="10">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
@@ -189,11 +201,21 @@
             }, 5000);
         }
 
-        // Update modal price when input changes
-        document.querySelectorAll('.price-input').forEach(function(input) {
+        // Update modal price when input changes for both fields
+        document.querySelectorAll('.price-input-pieces').forEach(function(input) {
             input.addEventListener('input', function() {
                 const spkId = this.dataset.spkId;
-                const modalPrice = document.getElementById('modal-price-' + spkId);
+                const modalPrice = document.getElementById('modal-price-pieces-' + spkId);
+                if (modalPrice) {
+                    modalPrice.textContent = this.value || 'Belum diisi';
+                }
+            });
+        });
+        
+        document.querySelectorAll('.price-input-meter').forEach(function(input) {
+            input.addEventListener('input', function() {
+                const spkId = this.dataset.spkId;
+                const modalPrice = document.getElementById('modal-price-meter-' + spkId);
                 if (modalPrice) {
                     modalPrice.textContent = this.value || 'Belum diisi';
                 }
@@ -204,16 +226,24 @@
         document.querySelectorAll('.btn-save').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const spkId = this.dataset.spkId;
-                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
-
-                if (!priceInput.value) {
-                    showNotification('Harap isi harga per meter terlebih dahulu.', 'error');
+                const priceInputPieces = document.querySelector(`.price-input-pieces[data-spk-id="${spkId}"]`);
+                const priceInputMeter = document.querySelector(`.price-input-meter[data-spk-id="${spkId}"]`);
+                
+                // Check if at least one price is filled
+                if (!priceInputPieces.value && !priceInputMeter.value) {
+                    showNotification('Harap isi setidaknya satu harga (per piece atau per meter).', 'error');
                     return;
                 }
 
-                const modalPrice = document.getElementById('modal-price-' + spkId);
-                if (modalPrice) {
-                    modalPrice.textContent = priceInput.value;
+                // Update modal with current values
+                const modalPriceMeter = document.getElementById('modal-price-meter-' + spkId);
+                if (modalPriceMeter) {
+                    modalPriceMeter.textContent = priceInputMeter.value || 'Belum diisi';
+                }
+                
+                const modalPricePieces = document.getElementById('modal-price-pieces-' + spkId);
+                if (modalPricePieces) {
+                    modalPricePieces.textContent = priceInputPieces.value || 'Belum diisi';
                 }
 
                 const modal = new bootstrap.Modal(document.getElementById('saveModal' + spkId));
@@ -225,15 +255,22 @@
         document.querySelectorAll('.btn-confirm-save').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const spkId = this.dataset.spkId;
-                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
-
-                if (!priceInput || !priceInput.value) {
-                    showNotification('Harga per meter tidak ditemukan atau kosong.', 'error');
+                const priceInputPieces = document.querySelector(`.price-input-pieces[data-spk-id="${spkId}"]`);
+                const priceInputMeter = document.querySelector(`.price-input-meter[data-spk-id="${spkId}"]`);
+                
+                // Check if at least one price is filled
+                if (!priceInputPieces.value && !priceInputMeter.value) {
+                    showNotification('Setidaknya satu harga (per piece atau per meter) harus diisi.', 'error');
                     return;
                 }
 
                 const formData = new FormData();
-                formData.append('price_per_meter', priceInput.value);
+                if (priceInputPieces.value) {
+                    formData.append('harga_per_piece', priceInputPieces.value);
+                }
+                if (priceInputMeter.value) {
+                    formData.append('price_per_meter', priceInputMeter.value);
+                }
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}');
 
                 fetch(`{{ route('invoice.save_price', ':spkId') }}`.replace(':spkId', spkId), {
@@ -257,18 +294,16 @@
                                     row.style.opacity = '0';
                                     setTimeout(() => {
                                         row.remove();
-                                        // Update list.js setelah menghapus elemen
-                                        spkCloseList.reIndex();
-                                        updateListInfo();
+                                        location.reload(); // reload the page to update the table
                                     }, 500);
                                 }
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal' + spkId));
                                 if (modal) {
                                     modal.hide();
                                 }
-                                showNotification('Harga kain berhasil disimpan.', 'success');
+                                showNotification('Harga berhasil disimpan.', 'success');
                             } else {
-                                showNotification(data.message || 'Gagal menyimpan harga kain dari server.', 'error');
+                                showNotification(data.message || 'Gagal menyimpan harga dari server.', 'error');
                             }
                         } catch (e) {
                             // Jika bukan JSON, mungkin ada error redirect atau HTML
@@ -277,7 +312,7 @@
                         }
                     })
                     .catch(error => {
-                        showNotification('Terjadi kesalahan saat menyimpan harga kain: ' + error.message, 'error');
+                        showNotification('Terjadi kesalahan saat menyimpan harga: ' + error.message, 'error');
                     });
             });
         });

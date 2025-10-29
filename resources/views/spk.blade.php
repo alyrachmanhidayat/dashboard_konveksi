@@ -1,5 +1,5 @@
+<!-- Menentukan apakah form dalam mode edit atau create -->
 @php
-// Menentukan apakah form dalam mode edit atau create. Ini adalah kunci utama.
 $isEdit = isset($spk);
 @endphp
 
@@ -7,11 +7,11 @@ $isEdit = isset($spk);
 
 @section('content')
 <div class="d-sm-flex justify-content-between align-items-center mb-4">
-    {{-- Judul halaman dinamis --}}
+    <!-- {{-- Judul halaman dinamis --}} -->
     <h3 class="text-dark mb-0">{{ $isEdit ? 'Edit Surat Perintah Kerja (SPK)' : 'Buat Surat Perintah Kerja (SPK)' }}</h3>
 </div>
 
-{{-- Notifikasi untuk success atau error --}}
+<!-- {{-- Notifikasi untuk success atau error --}} -->
 @if (session('success'))
 <div class="alert alert-success alert-dismissible fade show" role="alert">
     {{ session('success') }}
@@ -34,35 +34,33 @@ $isEdit = isset($spk);
 </div>
 @endif
 
-
-
-{{-- Form utama untuk data SPK --}}
-{{-- Action form dinamis, akan mengarah ke 'store' atau 'update' --}}
+<!-- {{-- Form utama untuk data SPK --}} -->
+<!-- {{-- Action form dinamis, akan mengarah ke 'store' atau 'update' --}} -->
 <form method="POST" action="{{ $isEdit ? route('spk.update', $spk->id) : route('spk.store') }}" enctype="multipart/form-data">
     @csrf
-    {{-- Menambahkan method PUT khusus untuk mode edit --}}
+    <!-- {{-- Menambahkan method PUT khusus untuk mode edit --}} -->
     @if($isEdit)
     @method('PUT')
     @endif
     <div class="row">
         <div class="col-lg-4">
-            {{-- Bagian upload foto --}}
+            <!-- {{-- Bagian upload foto --}} -->
             <div class="card mb-3">
                 <div class="card-body text-center shadow">
-                    {{-- Menampilkan gambar yang ada jika mode edit, atau placeholder jika mode create --}}
+                    <!-- {{-- Menampilkan gambar yang ada jika mode edit, atau placeholder jika mode create --}} -->
                     <img id="image-preview" class="mb-3 img-fluid" src="{{ $isEdit && $spk->design_image_path ? asset('storage/' . $spk->design_image_path) : 'https://placehold.co/269x356?text=Upload\nGambar' }}" alt="Design Preview" style="max-height: 356px; object-fit: cover;">
                     <div class="mb-3">
                         <input type="file" name="design_image" class="form-control" onchange="previewImage(event)">
                     </div>
                 </div>
             </div>
-            {{-- Bagian keterangan --}}
+            <!-- {{-- Bagian keterangan --}} -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="text-primary fw-bold m-0">Keterangan</h6>
                 </div>
                 <div class="card-body">
-                    {{-- Mengisi value secara dinamis --}}
+                    <!-- {{-- Mengisi value secara dinamis --}} -->
                     <textarea class="form-control" name="description" rows="7" placeholder="Tambahkan keterangan...">{{ old('description', $spk->description ?? '') }}</textarea>
                 </div>
             </div>
@@ -71,7 +69,7 @@ $isEdit = isset($spk);
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="text-primary fw-bold m-0">Informasi Order</h6>
-                    {{-- Menampilkan status hanya di mode edit --}}
+                    <!-- {{-- Menampilkan status hanya di mode edit --}} -->
                     @if($isEdit)
                     <span class="badge bg-info text-dark">Status: {{ $spk->status }}</span>
                     @endif
@@ -79,7 +77,7 @@ $isEdit = isset($spk);
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="nomor"><strong>Nomor SPK</strong></label>
+                            <label class="form-label text-black" for="nomor"><strong>Nomor SPK</strong></label>
                             @if($isEdit)
                             <input class="form-control" type="text" id="nomor" value="{{ $spk->spk_number }}" readonly>
                             @else
@@ -87,39 +85,39 @@ $isEdit = isset($spk);
                             @endif
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="tanggal-masuk"><strong>Tanggal Masuk</strong></label>
+                            <label class="form-label text-black" for="tanggal-masuk"><strong>Tanggal Masuk</strong></label>
                             <input class="form-control" type="date" id="tanggal-masuk" name="entry_date" value="{{ old('entry_date', $spk->entry_date ?? \Carbon\Carbon::now()->toDateString()) }}">
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="konsumen"><strong>Nama Konsumen</strong></label>
+                            <label class="form-label text-black" for="konsumen"><strong>Nama Konsumen</strong></label>
                             <input class="form-control" type="text" id="konsumen" name="customer_name" placeholder="Nama Konsumen" value="{{ old('customer_name', $spk->customer_name ?? '') }}">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="order"><strong>Nama Order</strong></label>
+                            <label class="form-label text-black" for="order"><strong>Nama Order</strong></label>
                             <input class="form-control" type="text" id="order" name="order_name" placeholder="Nama Order" value="{{ old('order_name', $spk->order_name ?? '') }}">
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="tanggal-kirim"><strong>Tanggal Kirim</strong></label>
+                            <label class="form-label text-black" for="tanggal-kirim"><strong>Tanggal Kirim</strong></label>
                             <input class="form-control" type="date" id="tanggal-kirim" name="delivery_date" value="{{ old('delivery_date', $spk->delivery_date ?? '') }}">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="bahan"><strong>Bahan</strong></label>
+                            <label class="form-label text-black" for="bahan"><strong>Bahan</strong></label>
                             <input class="form-control" type="text" id="bahan" name="material" placeholder="Bahan" value="{{ old('material', $spk->material ?? '') }}">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label"><strong>Ukuran & Jumlah</strong></label>
+                        <label class="form-label text-black"><strong>Ukuran & Jumlah</strong></label>
                         <div class="row g-2" id="size-inputs">
+                            <!-- Mengambil data ukuran yang tersimpan jika mode edit -->
                             @php
                             $sizes = ['S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
-                            // Mengambil data ukuran yang tersimpan jika mode edit
                             $spkSizes = $isEdit ? $spk->spkSizes->pluck('quantity', 'size') : collect();
                             @endphp
                             @foreach ($sizes as $size)
@@ -133,7 +131,7 @@ $isEdit = isset($spk);
 
                     <div class="row mt-3">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label" for="total"><strong>Total Order</strong></label>
+                            <label class="form-label text-black" for="total"><strong>Total Order</strong></label>
                             <input class="form-control" type="number" id="total" name="total_qty" placeholder="0" value="{{ old('total_qty', $spk->total_qty ?? 0) }}" readonly>
                         </div>
                     </div>
@@ -144,9 +142,15 @@ $isEdit = isset($spk);
                     <h6 class="text-primary fw-bold m-0">Aksi</h6>
                 </div>
                 <div class="card-body">
+                    @if($isEdit)
+                    <span>
+                        Note: Harus klik Update SPK setelah melakukan perubahan
+                    </span>
+                    @endif
+
                     <div class="row mt-2">
                         <div class="col-md-6 mb-2">
-                            {{-- Teks tombol dinamis --}}
+                        <!-- {{-- Teks tombol dinamis --}} -->
                             <button class="btn btn-info w-100" type="submit">
                                 <i class="fas fa-save me-1"></i> {{ $isEdit ? 'Update SPK' : 'Simpan SPK Baru' }}
                             </button>
@@ -182,7 +186,7 @@ $isEdit = isset($spk);
             <div class="row g-3 align-items-center mb-3">
                 <div class="col-md-2 col-6">
                     <div class="text-center p-2 border rounded">
-                        <label class="form-check-label d-block mb-2"><strong>Design</strong></label>
+                        <label class="form-check-label d-block mb-2 text-black"><strong>Design</strong></label>
                         <div class="form-check form-switch d-flex justify-content-center" style="font-size: 1.5rem;">
                             <input class="form-check-input" type="checkbox" name="is_design_done" {{ $spk->is_design_done ? 'checked' : '' }}>
                         </div>
@@ -190,7 +194,7 @@ $isEdit = isset($spk);
                 </div>
                 <div class="col-md-2 col-6">
                     <div class="text-center p-2 border rounded">
-                        <label class="form-check-label d-block mb-2"><strong>Print</strong></label>
+                        <label class="form-check-label d-block mb-2 text-black"><strong>Print</strong></label>
                         <div class="form-check form-switch d-flex justify-content-center" style="font-size: 1.5rem;">
                             <input class="form-check-input" type="checkbox" name="is_print_done" {{ $spk->is_print_done ? 'checked' : '' }}>
                         </div>
@@ -198,7 +202,7 @@ $isEdit = isset($spk);
                 </div>
                 <div class="col-md-2 col-6">
                     <div class="text-center p-2 border rounded">
-                        <label class="form-check-label d-block mb-2"><strong>Press</strong></label>
+                        <label class="form-check-label d-block mb-2 text-black"><strong>Press</strong></label>
                         <div class="form-check form-switch d-flex justify-content-center" style="font-size: 1.5rem;">
                             <input class="form-check-input" type="checkbox" name="is_press_done" {{ $spk->is_press_done ? 'checked' : '' }}>
                         </div>
@@ -206,14 +210,14 @@ $isEdit = isset($spk);
                 </div>
                 <div class="col-md-2 col-6">
                     <div class="text-center p-2 border rounded">
-                        <label class="form-check-label d-block mb-2"><strong>Delivery</strong></label>
+                        <label class="form-check-label d-block mb-2 text-black"><strong>Delivery</strong></label>
                         <div class="form-check form-switch d-flex justify-content-center" style="font-size: 1.5rem;">
                             <input class="form-check-input" type="checkbox" name="is_delivery_done" {{ $spk->is_delivery_done ? 'checked' : '' }}>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label"><strong>Total Meter Kain</strong></label>
+                    <label class="form-label text-black"><strong>Total Meter Kain</strong></label>
                     <input type="number" step="0.01" class="form-control" name="total_meter" placeholder="Contoh: 150.5" value="{{ $spk->total_meter }}">
                 </div>
             </div>
@@ -230,7 +234,7 @@ $isEdit = isset($spk);
                     </button>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <button class="btn btn-danger w-100 btn-modal-trigger" type="button" data-bs-toggle="modal" data-bs-target="#rejectOrderModal">
+                    <button class="btn btn-danger w-100 btn-modal-trigger text-black" type="button" data-bs-toggle="modal" data-bs-target="#rejectOrderModal">
                         <i class="fas fa-ban me-1"></i>Reject Order
                     </button>
                 </div>

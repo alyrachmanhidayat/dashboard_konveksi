@@ -45,10 +45,24 @@
             <table class="table-items">
                 <thead>
                     <tr>
+                        @php
+                            // Determine invoice type from invoice_number (INV/MTR/... or INV/QTY/...)
+                            $isMeterBased = str_contains($invoice->invoice_number, '/MTR/');
+                            $isPieceBased = str_contains($invoice->invoice_number, '/QTY/');
+                        @endphp
                         <th>NO</th>
                         <th>NAMA BARANG</th>
                         <th>QTY</th>
-                        <th>HARGA @METER (Rp)</th>
+                        @if($isMeterBased)
+                            <th>METER</th>
+                            <th>HARGA @METER (Rp)</th>
+                        @elseif($isPieceBased)
+                            <th>METER</th>
+                            <th>HARGA @PIECE (Rp)</th>
+                        @else
+                            <th>METER</th>
+                            <th>HARGA SATUAN (Rp)</th>
+                        @endif
                         <th>TOTAL (Rp)</th>
                         <th>TERBAYAR (Rp)</th>
                         <th>SISA TAGIHAN (Rp)</th>
@@ -60,7 +74,16 @@
                         <td>1</td>
                         <td>{{ $invoice->order_name }} ({{ $invoice->spk->spk_number ?? 'N/A' }})</td>
                         <td>{{ $invoice->total_qty }}</td>
-                        <td>{{ number_format($invoice->spk->price_per_meter ?? 0, 0, ',', '.') }}</td>
+                        <td>{{ $invoice->spk->total_meter ?? ($invoice->total_meter ?? 'N/A') }}</td>
+                        <td>
+                            @if($isMeterBased)
+                                {{ number_format($invoice->spk->price_per_meter ?? 0, 0, ',', '.') }}
+                            @elseif($isPieceBased)
+                                {{ number_format($invoice->spk->harga_per_piece ?? 0, 0, ',', '.') }}
+                            @else
+                                {{ number_format($invoice->spk->price_per_meter ?? $invoice->spk->harga_per_piece ?? 0, 0, ',', '.') }}
+                            @endif
+                        </td>
                         <td>{{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
                         <td>{{ number_format($invoice->total_amount - $invoice->remaining_amount, 0, ',', '.') }}</td>
                         <td class="sisa-tagihan text-danger fw-bold" data-sisa-tagihan="{{ $invoice->remaining_amount }}">

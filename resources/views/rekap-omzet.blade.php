@@ -13,7 +13,7 @@
             <div class="card-body">
                 <div class="row g-0 align-items-center">
                     <div class="col me-2">
-                        <div class="text-uppercase text-primary mb-1 fw-bold text-xs"><span>Order Selesai</span></div>
+                        <div class="text-uppercase text-primary mb-1 fw-bold text-xs"><span>Order Selesai (Bulan Ini)</span></div>
                         <div class="text-dark mb-0 fw-bold h5"><span>{{ $orderSelesai }}</span></div>
                     </div>
                     <div class="col-auto"><i class="fas fa-calendar fa-2x text-gray-300"></i></div>
@@ -26,7 +26,7 @@
             <div class="card-body">
                 <div class="row g-0 align-items-center">
                     <div class="col me-2">
-                        <div class="text-uppercase text-success mb-1 fw-bold text-xs"><span>Omzet</span></div>
+                        <div class="text-uppercase text-success mb-1 fw-bold text-xs"><span>Omzet (Bulan Ini)</span></div>
                         <div class="text-dark mb-0 fw-bold h5"><span>Rp {{ number_format($totalOmzet, 0, ',', '.') }}</span></div>
                     </div>
                     <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
@@ -39,7 +39,7 @@
             <div class="card-body">
                 <div class="row g-0 align-items-center">
                     <div class="col me-2">
-                        <div class="text-uppercase text-info mb-1 fw-bold text-xs"><span>QTY</span></div>
+                        <div class="text-uppercase text-info mb-1 fw-bold text-xs"><span>QTY (Bulan Ini)</span></div>
                         <div class="text-dark mb-0 fw-bold h5"><span>{{ $totalQty }}</span></div>
                     </div>
                     <div class="col-auto"><i class="fas fa-clipboard-list fa-2x text-gray-300"></i></div>
@@ -52,7 +52,7 @@
             <div class="card-body">
                 <div class="row g-0 align-items-center">
                     <div class="col me-2">
-                        <div class="text-uppercase text-warning mb-1 fw-bold text-xs"><span>Meter</span></div>
+                        <div class="text-uppercase text-warning mb-1 fw-bold text-xs"><span>Meter (Bulan Ini)</span></div>
                         <div class="text-dark mb-0 fw-bold h5"><span>{{ $totalMeter }}</span></div>
                     </div>
                     <div class="col-auto"><i class="fas fa-ruler fa-2x text-gray-300"></i></div>
@@ -86,20 +86,14 @@
         <div class="card-body">
 
             {{-- Filter Form --}}
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <input type="text" id="search-input-omzet" class="form-control" placeholder="Cari no invoice atau nama konsumen...">
-                </div>
-                <div class="col-md-6 text-md-end">
-                    {{-- Form Filter Tanggal --}}
-                    <form method="GET" action="{{ route('rekap-omzet') }}" class="d-inline-block me-2">
-                        <div class="input-group">
-                            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ $startDate }}" title="Dari Tanggal">
-                            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ $endDate }}" title="Sampai Tanggal">
-                            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
-                            <a href="{{ route('rekap-omzet') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
-                        </div>
-                    </form>
+            <div class="row mb-3 d-flex justify-content-end">
+                <div class="col-md-6 text-md-start mt-2">
+                    {{-- Date Range Filter (Client-side with DataTables) --}}
+                    <div class="input-group">
+                        <input type="date" id="min-date" class="form-control form-control-sm" placeholder="Dari Tanggal" title="Dari Tanggal">
+                        <input type="date" id="max-date" class="form-control form-control-sm" placeholder="Sampai Tanggal" title="Sampai Tanggal">
+                        <button type="button" id="clear-filter" class="btn btn-sm btn-outline-primary" title="Hapus Filter">Clear</button>
+                    </div>
                 </div>
             </div>
 
@@ -107,6 +101,7 @@
                 <table id="rekap-omzet-table" class="table table-striped">
                     <thead>
                         <tr>
+                            <th>Tanggal</th>
                             <th>Nomor Invoice</th>
                             <th>Nama Konsumen</th>
                             <th>QTY</th>
@@ -117,6 +112,7 @@
                     <tbody>
                         @forelse ($invoices as $invoice)
                         <tr>
+                            <td data-order="{{ $invoice->updated_at->format('Y-m-d') }}">{{ $invoice->updated_at->format('d/m/Y') }}</td>
                             <td>{{ $invoice->invoice_number }}</td>
                             <td>{{ $invoice->customer_name }}</td>
                             <td>{{ $invoice->total_qty }}</td>
@@ -125,7 +121,8 @@
                         </tr>
                         @empty
                         <tr>
-                            <td class="text-center" colspan="5">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
+                            <td class="text-center" colspan="6">Tidak ada data omzet pada rentang tanggal yang dipilih.</td>
+                            <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
                             <td style="display: none;"></td>
@@ -150,7 +147,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // ... (Kode Chart.js Anda tetap sama dan tidak diubah)
+        // Chart.js code
         const chartLabels = @json($chartLabels ?? []);
         const chartValues = @json($chartValues ?? []);
 
@@ -188,15 +185,43 @@
             });
         }
 
+        // Custom date range filtering function for DataTables
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                var min = $('#min-date').val();
+                var max = $('#max-date').val();
+                var date = data[0]; // Date column is now index 0 (first column)
+                
+                // Convert date from dd/mm/yyyy to yyyy-mm-dd for comparison
+                var dateParts = date.split('/');
+                if (dateParts.length === 3) {
+                    var dateStr = dateParts[2] + '-' + dateParts[1] + '-' + dateParts[0]; // yyyy-mm-dd
+                } else {
+                    return true; // If date format is invalid, show the row
+                }
+                
+                if (
+                    (min === '' && max === '') ||
+                    (min === '' && dateStr <= max) ||
+                    (min <= dateStr && max === '') ||
+                    (min <= dateStr && dateStr <= max)
+                ) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
         // Initialize DataTable
         var table = $('#rekap-omzet-table').DataTable({
             "pageLength": 10,
             "lengthChange": true,
-            "searching": false,
+            "searching": true,
             "ordering": true,
             "info": true,
             "autoWidth": false,
             "responsive": true,
+            "order": [[0, 'desc']], // Sort by date column (descending)
             "language": {
                 "search": "Cari:",
                 "lengthMenu": "Tampilkan _MENU_ entri",
@@ -211,9 +236,16 @@
             }
         });
 
-        // Update search when typing in the custom search input
-        $('#search-input-omzet').on('keyup', function() {
-            table.search(this.value).draw();
+        // Event listener for date inputs - redraw table when dates change
+        $('#min-date, #max-date').on('change', function() {
+            table.draw();
+        });
+
+        // Clear filter button
+        $('#clear-filter').on('click', function() {
+            $('#min-date').val('');
+            $('#max-date').val('');
+            table.draw();
         });
     });
 </script>

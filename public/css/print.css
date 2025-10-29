@@ -19,6 +19,9 @@ table {
     border-collapse: collapse;
     border-spacing: 0;
     margin: 0;
+    position: relative;
+    z-index: 1;
+    background-color: transparent;
 }
 
 td, th {
@@ -43,6 +46,25 @@ table, tr, td, th, div {
     padding: 0px;
     page-break-inside: avoid;
     page-break-after: avoid;
+    position: relative;
+}
+
+/* Watermark image - fixed position for every printed page */
+.watermark-img {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40%;
+    height: auto;
+    opacity: 0.1;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.periode-title {
+    position: relative;
+    z-index: 1;
 }
 
 .no-spk{
@@ -99,7 +121,7 @@ table, tr, td, th, div {
 .info-parent {
     font-weight: bold;
     width: 23%;
-    background-color: #f0f0f0;
+    background-color: #f0f0f070;
 
 }
 
@@ -149,7 +171,11 @@ table, tr, td, th, div {
     text-align: center;
     vertical-align: middle;
     margin-bottom: 5px;
-    background-color: #f0f0f0;
+    background-color: transparent;
+}
+
+.keterangan-section {
+    background-color: transparent;
 }
 
 .keterangan-section .title {
@@ -158,7 +184,7 @@ table, tr, td, th, div {
     text-align: center;
     padding: 6px;
     font-size: 11pt;
-    background-color: #f0f0f0;
+    background-color: transparent;
 }
 
 .keterangan-section .content {
@@ -170,7 +196,7 @@ table, tr, td, th, div {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff;
+    background-color: transparent;
     font-size: 9pt;   /* perkecil sedikit */
     overflow: hidden; /* jika kelebihan akan tersembunyi */
 }
@@ -183,7 +209,7 @@ table, tr, td, th, div {
     border-top: 1px solid #000;
     border-bottom: 1px solid #000;
     margin: 15px 0;
-    background-color: #f0f0f0;
+    background-color: #f0f0f070;
 }
 
 .progress-table {
@@ -194,7 +220,7 @@ table, tr, td, th, div {
 }
 .progress-head {
     border: 1px solid #000;
-    background-color: #f0f0f0;
+    background-color: #f0f0f070;
     text-align: center;
 
 }

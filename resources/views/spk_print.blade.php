@@ -12,6 +12,9 @@
 
 <body>
     <div class="container">
+        <!-- Watermark -->
+        <img src="{{ asset('assets/img/logo_ISW-removebg.png') }}" alt="Watermark" class="watermark-img">
+        
         <div class="periode-title">
             PERIODE {{ \Carbon\Carbon::parse($spk->entry_date)->format('Y') }}
         </div>
