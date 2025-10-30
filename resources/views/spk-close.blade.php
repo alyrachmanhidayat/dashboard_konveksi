@@ -3,9 +3,9 @@
 @section('content')
 
 {{-- SPK-Close --}}
-<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
+<div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed Admin</h3>
-</div> -->
+</div>
 
 {{-- Alert untuk notifikasi --}}
 @if (session('success'))

@@ -176,6 +176,7 @@
                 <nav class="navbar navbar-light navbar-expand bg-white shadow mb-4 topbar static-top">
                     <div class="container-fluid">
                         <button class="btn btn-link d-md-none rounded-circle me-3" id="sidebarToggleTop" type="button"><i class="fas fa-bars"></i></button>
+                        <h1 class="mb-0 text-dark" style="font-size: 1.5rem; font-family: 'Montserrat', sans-serif; font-weight: 700;">ISW Sportware</h1>
                         <ul class="navbar-nav flex-nowrap ms-auto">
                             @auth
                             <!-- Show live clock and date -->

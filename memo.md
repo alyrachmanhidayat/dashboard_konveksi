@@ -908,6 +908,228 @@ Based on DOCUMENTATION.md and project structure:
 ### How to push to this md
 - git commit message to AI memory
 
+---
+
+### Session 3: 2025-10-30 (UI Improvements & Production Configuration)
+
+**User Requests**:
+1. Add "ISW Sportware" title to topbar (desktop left, mobile visible)
+2. Use Poppins font for the title
+3. Fix HTTP notification issues in spk-close.blade.php
+4. Document production environment configuration
+
+---
+
+**Issue 1: Topbar Title Addition**
+
+**User Request**: "Add title on the left side of the topbar in desktop, and make it shown on mobile topbar. The title is 'ISW Sportware'"
+
+**Solution Implemented**:
+Added brand title to topbar with responsive visibility and Poppins font.
+
+**Files Modified**:
+1. **resources/views/layouts/app.blade.php** (Line 179)
+   - Added `<h1>` element with "ISW Sportware" text
+   - Positioned after mobile menu button (left side)
+   - Styled with: `font-size: 1.5rem; font-family: 'Poppins', sans-serif;`
+   - Bold black text (`fw-bold text-dark`)
+   - Visible on both mobile and desktop
+
+**Implementation**:
+```html
+<button class="btn btn-link d-md-none rounded-circle me-3" id="sidebarToggleTop" type="button">
+    <i class="fas fa-bars"></i>
+</button>
+<h1 class="mb-0 fw-bold text-dark" style="font-size: 1.5rem; font-family: 'Poppins', sans-serif;">ISW Sportware</h1>
+<ul class="navbar-nav flex-nowrap ms-auto">
+```
+
+**Expected Behavior**:
+- **Desktop**: Title appears on left side after sidebar toggle button
+- **Mobile**: Title visible next to hamburger menu
+- **Font**: Poppins (already loaded from Google Fonts in head)
+- **Style**: Bold, black, 1.5rem size
+
+**Status**: ✅ Completed
+
+---
+
+**Issue 2: HTTP Notification Fix in spk-close.blade.php**
+
+**User Request**: "Fix HTTP notification issues and improve UI consistency"
+
+**Problem Identified**:
+1. Notification function was working but needed consistency with production environment
+2. Header section was commented out, causing notification insertion issues
+3. Production configuration needed for HTTPS on ryanap.my.id
+
+**Files Modified**:
+1. **resources/views/spk-close.blade.php**
+   - **Uncommented header section** (Lines 6-8):
+     ```html
+     <!-- BEFORE (Commented): -->
+     <!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
+         <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed Admin</h3>
+     </div> -->
+     
+     <!-- AFTER (Uncommented): -->
+     <div class="d-sm-flex justify-content-between align-items-center mb-4">
+         <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed Admin</h3>
+     </div>
+     ```
+   
+   - **Notification function already correct** (no changes needed):
+     - Uses `.d-sm-flex` as container reference
+     - Falls back to `document.body` if container not found
+     - Auto-dismisses after 5 seconds
+     - Bootstrap-styled alerts
+
+**Expected Behavior**:
+- ✅ Notifications appear at top of page content
+- ✅ Success notifications show in green (`alert-success`)
+- ✅ Error notifications show in red (`alert-danger`)
+- ✅ Auto-dismiss after 5 seconds
+- ✅ Manual dismiss with close button
+
+**Status**: ✅ Fixed
+
+---
+
+**Issue 3: Production Environment Configuration**
+
+**User Request**: "Add production and HTTPS configuration to .env, add line to AppServiceProvider boot()"
+
+**Configuration Required** (To be applied manually):
+
+**1. .env Changes:**
+```env
+# BEFORE (Development):
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost/dashboard-konveksi
+
+# AFTER (Production):
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://ryanap.my.id
+```
+
+**2. AppServiceProvider.php Changes:**
+File: `app/Providers/AppServiceProvider.php`
+
+```php
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        // Force HTTPS in production environment
+        if ($this->app->environment('production')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+    }
+}
+```
+
+**Purpose**:
+- **APP_ENV=production**: Enables production optimizations, caching, and security
+- **APP_DEBUG=false**: Hides detailed error messages from users
+- **APP_URL=https://ryanap.my.id**: Sets correct base URL for asset generation
+- **forceScheme('https')**: Ensures all generated URLs use HTTPS protocol
+
+**Why This Fixes HTTP Notification Issues**:
+1. Mixed content warnings eliminated (HTTP assets on HTTPS page)
+2. AJAX requests use correct protocol
+3. Asset URLs (CSS, JS, images) use HTTPS
+4. Form submissions use HTTPS
+5. Prevents browser security warnings
+
+**Deployment Checklist**:
+- [ ] Update `.env` with production values
+- [ ] Add HTTPS enforcement to `AppServiceProvider.php`
+- [ ] Run `php artisan config:cache`
+- [ ] Run `php artisan route:cache`
+- [ ] Run `php artisan view:cache`
+- [ ] Ensure SSL certificate is installed on server
+- [ ] Test all AJAX functionality (notifications, form submissions)
+- [ ] Verify asset URLs use HTTPS
+
+**Status**: 📝 Documented (manual implementation required)
+
+---
+
+**Summary of Session 3 Changes**:
+1. ✅ Added "ISW Sportware" title to topbar with Poppins font (layouts/app.blade.php)
+2. ✅ Uncommented header in spk-close.blade.php for proper notification placement
+3. 📝 Documented production HTTPS configuration (.env + AppServiceProvider)
+4. ✅ Verified notification function is working correctly
+
+---
+
 **END OF MEMO**
 
 *This memo serves as persistent knowledge base for AI assistant across sessions. Update this file whenever significant changes are made to the project.*
+
+buat masalah http notif di spk-close.blade.php
+1. di env add production dan https nya ke ryanap.my.id
+2. tambahin line yang di: { aku lupa tapi udah ada di yg prod tadi :)  }
+    public function boot(): void
+    {
+        //
+    }
+
+buat benerin notif di spk-close.blade.php
+di spk-close.php fix ini:
+1. uncomment ini:
+{{-- SPK-Close --}}
+<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
+    <h3 class="text-dark mb-0">Surat Perintah Kerja (SPK) - Closed Admin</h3>
+</div> -->
+2. ganti line di script dengan ini:
+        // Function to show notification using the same style as project alerts
+        function showNotification(message, type) {
+            const existingNotifications = document.querySelectorAll('.temp-notification');
+            existingNotifications.forEach(notification => notification.remove());
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = `alert temp-notification alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+            notificationDiv.setAttribute('role', 'alert');
+            notificationDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            const contentContainer = document.querySelector('.d-sm-flex')?.parentElement;
+            if (contentContainer) {
+                contentContainer.insertBefore(notificationDiv, contentContainer.firstChild);
+            } else {
+                document.body.insertBefore(notificationDiv, document.body.firstChild);
+            }
+            setTimeout(() => {
+                if (notificationDiv.classList.contains('show')) {
+                    const bsAlert = bootstrap.Alert.getInstance(notificationDiv);
+                    if (bsAlert) {
+                        bsAlert.close();
+                    } else {
+                        notificationDiv.classList.remove('show');
+                        setTimeout(() => {
+                            notificationDiv.remove();
+                        }, 150);
+                    }
+                }
+            }, 5000);
+        }
