@@ -1,2 +1,8 @@
 /node_modules
 hosting.md
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+web.zip
