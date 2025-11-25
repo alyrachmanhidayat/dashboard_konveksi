@@ -1,8 +1,52 @@
+# Dependencies
 /node_modules
-hosting.md
+/vendor
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.swp
+
+# Build files
+/public/hot
+/public/storage
+/public/build
+
+# Storage & Cache
+/storage/*.key
+/storage/logs/*.log
+/bootstrap/cache/*.php
+
+# IDE files
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled assets
+/public/css
+/public/js
+/public/mix-manifest.json
+
+# Archives
 *.zip
 *.rar
 *.7z
 *.tar
 *.gz
 web.zip
+
+# Deployment scripts (for public repo)
+deploy-docker-initiate.sh
+deploy-docker-migrate.sh
+deploy-docker.sh
+push-to-dockerhub.sh
+
+# Private documentation
+hosting.md
+memo.md
