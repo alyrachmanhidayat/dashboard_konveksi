@@ -25,24 +25,15 @@
 @endif
 
 {{-- Table --}}
-<div id="spk-close-list">
+<div>
     <div class="card shadow">
-        <div class="card-header"></div>
+        <div class="card-header py-3">
+            <h4 class="text-primary m-0 fw-bold">Surat Perintah Kerja (SPK) - Closed Admin</h4>
+        </div>
+        
         <div class="card-body">
-            {{-- KONTROL UNTUK LIST.JS (SEARCH & SORT) --}}
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <input type="text" class="form-control search" placeholder="Cari kode order atau nama konsumen...">
-                </div>
-                <div class="col-md-8 text-md-end">
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="tanggal">Tanggal Close</button>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                </div>
-            </div>
-
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="spk-close-table" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Kode Order</th>
@@ -52,43 +43,45 @@
                             <th>QTY</th>
                             <th>Meter</th>
                             <th>Status</th>
+                            <th>Harga @pieces</th>
                             <th>Harga @meter</th>
                             <th>Action</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @php
                         $filteredSpkList = $closedSpkList->filter(function($spk) {
-                        return empty($spk->price_per_meter);
+                        return empty($spk->price_per_meter) && empty($spk->harga_per_piece);
                         });
                         @endphp
                         @forelse ($filteredSpkList as $spk)
                         <tr id="spk-row-{{ $spk->id }}">
-                            {{-- Tambahkan class untuk valueNames List.js --}}
-                            <td class="kode-order">{{ $spk->spk_number }}</td>
-                            <td class="tanggal" data-tanggal="{{ $spk->closed_date }}">{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
-                            <td class="konsumen">{{ $spk->customer_name }}</td>
+                            <td>{{ $spk->spk_number }}</td>
+                            <td>{{ $spk->closed_date ? \Carbon\Carbon::parse($spk->closed_date)->format('d M Y') : 'N/A' }}</td>
+                            <td>{{ $spk->customer_name }}</td>
                             <td>{{ $spk->order_name }}</td>
                             <td>{{ $spk->total_qty }}</td>
                             <td>{{ $spk->total_meter ?? 'N/A' }}</td>
                             <td class="text-white text-center {{ $spk->status == 'Closed' ? 'bg-success' : 'bg-danger' }}">{{ $spk->status }}</td>
                             <td>
-                                <input type="number" step="1" class="form-control price-input" name="price_per_meter" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
+                                <input type="number" step="0.01" class="form-control price-input-pieces" name="harga_per_piece" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('harga_per_piece', $spk->harga_per_piece) }}">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" class="form-control price-input-meter" name="price_per_meter" data-spk-id="{{ $spk->id }}" placeholder="Rp." value="{{ old('price_per_meter', $spk->price_per_meter) }}">
                             </td>
                             <td class="text-center">
                                 <button class="btn {{ $spk->status == 'Closed' ? 'btn-success' : 'btn-danger' }} form-control btn-save" type="button" data-spk-id="{{ $spk->id }}">Save</button>
 
-                                <!-- Modal save price for this specific SPK (KODE ANDA TETAP ADA) -->
+                                <!-- Modal save price for this specific SPK-->
                                 <div class="modal fade" id="saveModal{{ $spk->id }}" tabindex="-1" aria-labelledby="saveModalLabel{{ $spk->id }}" aria-hidden="true">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="saveModalLabel{{ $spk->id }}">Konfirmasi Harga Kain</h1>
+                                                <h1 class="modal-title fs-5" id="saveModalLabel{{ $spk->id }}">Konfirmasi Harga</h1>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <p>Apakah Anda yakin ingin menyimpan harga kain ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
+                                                <p>Apakah Anda yakin ingin menyimpan harga-harga ini dan <strong>tidak bisa</strong> dirubah lagi?</p>
                                                 <div class="mb-3">
                                                     <label class="form-label"><strong>Kode Order:</strong></label>
                                                     <p class="form-control-plaintext">{{ $spk->spk_number }}</p>
@@ -103,13 +96,17 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="form-label"><strong>Harga Per-Meter Kain:</strong></label>
-                                                    <p class="form-control-plaintext" id="modal-price-{{ $spk->id }}">{{ $spk->price_per_meter ?: 'Belum diisi' }}</p>
+                                                    <p class="form-control-plaintext" id="modal-price-meter-{{ $spk->id }}">{{ $spk->price_per_meter ?: 'Belum diisi' }}</p>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><strong>Harga Per-Piece Baju:</strong></label>
+                                                    <p class="form-control-plaintext" id="modal-price-pieces-{{ $spk->id }}">{{ $spk->harga_per_piece ?: 'Belum diisi' }}</p>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                                 <button type="button" class="btn btn-success btn-confirm-save" data-spk-id="{{ $spk->id }}" id="confirm-save-{{ $spk->id }}">
-                                                    <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga Kain
+                                                    <i class="fas fa-check-circle me-1"></i>Ya, Simpan Harga
                                                 </button>
                                             </div>
                                         </div>
@@ -119,20 +116,20 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td class="text-center" colspan="10">Tidak ada SPK yang perlu diisi harganya.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-            {{-- KONTENER UNTUK PAGINATION LIST.JS --}}
-            <div class="row mt-3">
-                <div class="col-md-6">
-                    <p id="listjs-info"></p>
-                </div>
-                <div class="col-md-6">
-                    <ul class="pagination justify-content-end"></ul>
-                </div>
             </div>
         </div>
         <div class="card-footer"></div>
@@ -142,56 +139,38 @@
 @endsection
 
 @push('scripts')
-{{-- KODE SCRIPT ANDA TIDAK SAYA UBAH --}}
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
-    // Inisialisasi List.js
     document.addEventListener('DOMContentLoaded', function() {
-        var options = {
-            valueNames: [
-                'kode-order',
-                'konsumen',
-                {
-                    name: 'tanggal',
-                    attr: 'data-tanggal'
+        // Initialize DataTable
+        $('#spk-close-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
                 }
-            ],
-            page: 5,
-            pagination: {
-                paginationClass: "pagination",
-            },
-        };
-
-        var spkCloseList = new List('spk-close-list', options);
-
-        // Fungsi untuk update info pagination
-        function updateListInfo() {
-            const info = document.getElementById('listjs-info');
-            if (info) {
-                const total = spkCloseList.items.length;
-                const page = spkCloseList.page;
-                const i = spkCloseList.i;
-                const showing = total === 0 ? 0 : i;
-                info.textContent = `Menampilkan ${showing} dari ${total} data`;
             }
-        }
-
-        // Panggil saat pertama kali dan setiap kali list diupdate
-        updateListInfo();
-        spkCloseList.on('updated', updateListInfo);
-
-        // Styling pagination List.js agar sesuai Bootstrap
-        spkCloseList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) link.classList.add('page-link');
-            });
         });
 
         // Function to show notification using the same style as project alerts
         function showNotification(message, type) {
-            // ... (kode notifikasi Anda tetap sama)
             const existingNotifications = document.querySelectorAll('.temp-notification');
             existingNotifications.forEach(notification => notification.remove());
             const notificationDiv = document.createElement('div');
@@ -222,11 +201,21 @@
             }, 5000);
         }
 
-        // Update modal price when input changes
-        document.querySelectorAll('.price-input').forEach(function(input) {
+        // Update modal price when input changes for both fields
+        document.querySelectorAll('.price-input-pieces').forEach(function(input) {
             input.addEventListener('input', function() {
                 const spkId = this.dataset.spkId;
-                const modalPrice = document.getElementById('modal-price-' + spkId);
+                const modalPrice = document.getElementById('modal-price-pieces-' + spkId);
+                if (modalPrice) {
+                    modalPrice.textContent = this.value || 'Belum diisi';
+                }
+            });
+        });
+        
+        document.querySelectorAll('.price-input-meter').forEach(function(input) {
+            input.addEventListener('input', function() {
+                const spkId = this.dataset.spkId;
+                const modalPrice = document.getElementById('modal-price-meter-' + spkId);
                 if (modalPrice) {
                     modalPrice.textContent = this.value || 'Belum diisi';
                 }
@@ -237,16 +226,24 @@
         document.querySelectorAll('.btn-save').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const spkId = this.dataset.spkId;
-                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
-
-                if (!priceInput.value) {
-                    showNotification('Harap isi harga per meter terlebih dahulu.', 'error');
+                const priceInputPieces = document.querySelector(`.price-input-pieces[data-spk-id="${spkId}"]`);
+                const priceInputMeter = document.querySelector(`.price-input-meter[data-spk-id="${spkId}"]`);
+                
+                // Check if at least one price is filled
+                if (!priceInputPieces.value && !priceInputMeter.value) {
+                    showNotification('Harap isi setidaknya satu harga (per piece atau per meter).', 'error');
                     return;
                 }
 
-                const modalPrice = document.getElementById('modal-price-' + spkId);
-                if (modalPrice) {
-                    modalPrice.textContent = priceInput.value;
+                // Update modal with current values
+                const modalPriceMeter = document.getElementById('modal-price-meter-' + spkId);
+                if (modalPriceMeter) {
+                    modalPriceMeter.textContent = priceInputMeter.value || 'Belum diisi';
+                }
+                
+                const modalPricePieces = document.getElementById('modal-price-pieces-' + spkId);
+                if (modalPricePieces) {
+                    modalPricePieces.textContent = priceInputPieces.value || 'Belum diisi';
                 }
 
                 const modal = new bootstrap.Modal(document.getElementById('saveModal' + spkId));
@@ -258,15 +255,22 @@
         document.querySelectorAll('.btn-confirm-save').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 const spkId = this.dataset.spkId;
-                const priceInput = document.querySelector(`.price-input[data-spk-id="${spkId}"]`);
-
-                if (!priceInput || !priceInput.value) {
-                    showNotification('Harga per meter tidak ditemukan atau kosong.', 'error');
+                const priceInputPieces = document.querySelector(`.price-input-pieces[data-spk-id="${spkId}"]`);
+                const priceInputMeter = document.querySelector(`.price-input-meter[data-spk-id="${spkId}"]`);
+                
+                // Check if at least one price is filled
+                if (!priceInputPieces.value && !priceInputMeter.value) {
+                    showNotification('Setidaknya satu harga (per piece atau per meter) harus diisi.', 'error');
                     return;
                 }
 
                 const formData = new FormData();
-                formData.append('price_per_meter', priceInput.value);
+                if (priceInputPieces.value) {
+                    formData.append('harga_per_piece', priceInputPieces.value);
+                }
+                if (priceInputMeter.value) {
+                    formData.append('price_per_meter', priceInputMeter.value);
+                }
                 formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}');
 
                 fetch(`{{ route('invoice.save_price', ':spkId') }}`.replace(':spkId', spkId), {
@@ -290,18 +294,16 @@
                                     row.style.opacity = '0';
                                     setTimeout(() => {
                                         row.remove();
-                                        // Update list.js setelah menghapus elemen
-                                        spkCloseList.reIndex();
-                                        updateListInfo();
+                                        location.reload(); // reload the page to update the table
                                     }, 500);
                                 }
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('saveModal' + spkId));
                                 if (modal) {
                                     modal.hide();
                                 }
-                                showNotification('Harga kain berhasil disimpan.', 'success');
+                                showNotification('Harga berhasil disimpan.', 'success');
                             } else {
-                                showNotification(data.message || 'Gagal menyimpan harga kain dari server.', 'error');
+                                showNotification(data.message || 'Gagal menyimpan harga dari server.', 'error');
                             }
                         } catch (e) {
                             // Jika bukan JSON, mungkin ada error redirect atau HTML
@@ -310,7 +312,7 @@
                         }
                     })
                     .catch(error => {
-                        showNotification('Terjadi kesalahan saat menyimpan harga kain: ' + error.message, 'error');
+                        showNotification('Terjadi kesalahan saat menyimpan harga: ' + error.message, 'error');
                     });
             });
         });

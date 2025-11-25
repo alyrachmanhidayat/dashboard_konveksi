@@ -23,13 +23,14 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Menyimpan harga per meter pada SPK Closed.
+     * Menyimpan harga per meter dan/atau harga per piece pada SPK Closed.
      */
     public function savePrice(Request $request, Spk $spk)
     {
         // Lakukan validasi secara manual agar bisa mengembalikan response JSON saat gagal
         $validator = Validator::make($request->all(), [
-            'price_per_meter' => 'required|numeric|min:0',
+            'price_per_meter' => 'nullable|numeric|min:0',
+            'harga_per_piece' => 'nullable|numeric|min:0',
         ]);
 
         // Jika validasi gagal, kirim response error JSON
@@ -37,13 +38,24 @@ class InvoiceController extends Controller
             return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
         }
 
+        // Validasi bahwa setidaknya satu harga harus diisi
+        if (empty($request->price_per_meter) && empty($request->harga_per_piece)) {
+            return response()->json(['success' => false, 'message' => 'Setidaknya satu harga (per meter atau per piece) harus diisi.'], 422);
+        }
+
         try {
-            $spk->update([
-                'price_per_meter' => $request->price_per_meter,
-            ]);
+            $updateData = [];
+            if (!empty($request->price_per_meter)) {
+                $updateData['price_per_meter'] = $request->price_per_meter;
+            }
+            if (!empty($request->harga_per_piece)) {
+                $updateData['harga_per_piece'] = $request->harga_per_piece;
+            }
+
+            $spk->update($updateData);
 
             // Selalu kembalikan JSON jika sukses
-            return response()->json(['success' => true, 'message' => 'Harga per meter berhasil disimpan.']);
+            return response()->json(['success' => true, 'message' => 'Harga berhasil disimpan.']);
         } catch (\Exception $e) {
             // Kembalikan error server jika ada masalah lain
             return response()->json(['success' => false, 'message' => 'Gagal menyimpan data ke database.'], 500);
@@ -78,37 +90,99 @@ class InvoiceController extends Controller
     public function publishInvoice(Request $request)
     {
         $request->validate([
-            'selected_spk_ids' => 'required|array|min:1',
+            'selected_spk_ids' => 'required|integer', // Changed from array to single integer
         ]);
 
-        $selectedSpks = Spk::whereIn('id', $request->selected_spk_ids)
+        $selectedSpk = Spk::where('id', $request->selected_spk_ids)
             ->where('status', 'Closed')
-            ->get();
+            ->first();
 
-        if ($selectedSpks->isEmpty()) {
+        if (!$selectedSpk) {
             return redirect()->back()->with('error', 'Tidak ada SPK yang valid untuk diterbitkan invoice.');
         }
 
         DB::beginTransaction();
         try {
             $createdInvoiceIds = [];
-            foreach ($selectedSpks as $spk) {
-                if (is_null($spk->price_per_meter) || is_null($spk->total_meter)) {
-                    throw new \Exception("SPK #{$spk->spk_number} belum memiliki harga/meter atau total meter.");
+            
+            // Check if only price_per_meter is present
+            if (!is_null($selectedSpk->price_per_meter) && is_null($selectedSpk->harga_per_piece)) {
+                if (is_null($selectedSpk->total_meter)) {
+                    throw new \Exception("SPK #{$selectedSpk->spk_number} belum memiliki total meter.");
                 }
-                $totalAmount = $spk->total_meter * $spk->price_per_meter;
-                $invoiceNumber = $this->generateInvoiceNumber();
+                
+                $totalAmount = $selectedSpk->total_meter * $selectedSpk->price_per_meter;
+                $invoiceNumber = $this->generateInvoiceNumber('MTR'); // Use INV/MTR format
 
                 $invoice = Invoice::create([
                     'invoice_number' => $invoiceNumber,
-                    'spk_id' => $spk->id,
-                    'customer_name' => $spk->customer_name,
-                    'order_name' => $spk->order_name,
-                    'total_qty' => $spk->total_qty,
+                    'spk_id' => $selectedSpk->id,
+                    'customer_name' => $selectedSpk->customer_name,
+                    'order_name' => $selectedSpk->order_name . ' (MTR)',
+                    'total_qty' => $selectedSpk->total_qty,
                     'total_amount' => $totalAmount,
+                    'total_meter' => $selectedSpk->total_meter,
                 ]);
 
                 $createdInvoiceIds[] = $invoice->id;
+            }
+            // Check if only harga_per_piece is present
+            elseif (!is_null($selectedSpk->harga_per_piece) && is_null($selectedSpk->price_per_meter)) {
+                $totalAmount = $selectedSpk->total_qty * $selectedSpk->harga_per_piece;
+                $invoiceNumber = $this->generateInvoiceNumber('QTY'); // Use INV/QTY format
+
+                $invoice = Invoice::create([
+                    'invoice_number' => $invoiceNumber,
+                    'spk_id' => $selectedSpk->id,
+                    'customer_name' => $selectedSpk->customer_name,
+                    'order_name' => $selectedSpk->order_name . ' (QTY)',
+                    'total_qty' => $selectedSpk->total_qty,
+                    'total_amount' => $totalAmount,
+                    'total_meter' => $selectedSpk->total_meter,
+                ]);
+
+                $createdInvoiceIds[] = $invoice->id;
+            }
+            // Check if both prices are present
+            elseif (!is_null($selectedSpk->price_per_meter) && !is_null($selectedSpk->harga_per_piece)) {
+                if (is_null($selectedSpk->total_meter)) {
+                    throw new \Exception("SPK #{$selectedSpk->spk_number} belum memiliki total meter.");
+                }
+                
+                // Create MTR invoice
+                $totalAmountMtr = $selectedSpk->total_meter * $selectedSpk->price_per_meter;
+                $invoiceNumberMtr = $this->generateInvoiceNumber('MTR'); // Use INV/MTR format
+                
+                $invoiceMtr = Invoice::create([
+                    'invoice_number' => $invoiceNumberMtr,
+                    'spk_id' => $selectedSpk->id,
+                    'customer_name' => $selectedSpk->customer_name,
+                    'order_name' => $selectedSpk->order_name . ' (MTR)',
+                    'total_qty' => $selectedSpk->total_qty,
+                    'total_amount' => $totalAmountMtr,
+                    'total_meter' => $selectedSpk->total_meter,
+                ]);
+
+                $createdInvoiceIds[] = $invoiceMtr->id;
+                
+                // Create QTY invoice
+                $totalAmountQty = $selectedSpk->total_qty * $selectedSpk->harga_per_piece;
+                $invoiceNumberQty = $this->generateInvoiceNumber('QTY'); // Use INV/QTY format
+                
+                $invoiceQty = Invoice::create([
+                    'invoice_number' => $invoiceNumberQty,
+                    'spk_id' => $selectedSpk->id,
+                    'customer_name' => $selectedSpk->customer_name,
+                    'order_name' => $selectedSpk->order_name . ' (QTY)',
+                    'total_qty' => $selectedSpk->total_qty,
+                    'total_amount' => $totalAmountQty,
+                    'total_meter' => $selectedSpk->total_meter,
+                ]);
+
+                $createdInvoiceIds[] = $invoiceQty->id;
+            }
+            else {
+                throw new \Exception("SPK #{$selectedSpk->spk_number} tidak memiliki harga yang valid.");
             }
 
             DB::commit();
@@ -116,14 +190,13 @@ class InvoiceController extends Controller
             // If redirect_to_print is true, redirect to print page
             // Jika user menekan tombol "Publish & Print"
             if ($request->has('redirect_to_print') && !empty($createdInvoiceIds)) {
-                // Gabungkan array ID menjadi string dipisahkan koma (e.g., "1,2,3")
                 $invoiceIdsString = implode(',', $createdInvoiceIds);
 
                 // Return JSON response with redirect URL for AJAX requests
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([
                         'redirect' => route('invoice.print', ['invoiceIds' => $invoiceIdsString]),
-                        'message' => 'Invoice berhasil diterbitkan!'
+                        'message' => count($createdInvoiceIds) . ' invoice berhasil diterbitkan!'
                     ]);
                 }
                 
@@ -135,27 +208,46 @@ class InvoiceController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Invoice berhasil diterbitkan!'
+                    'message' => count($createdInvoiceIds) . ' invoice berhasil diterbitkan!',
+                    'invoice_ids' => $createdInvoiceIds // Add this line to return the array of invoice IDs
                 ]);
             }
             
-            return redirect()->route('invoice.index')->with('success', 'Invoice berhasil diterbitkan!');
+            return redirect()->route('invoice.index')->with('success', count($createdInvoiceIds) . ' invoice berhasil diterbitkan!');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Return JSON for AJAX requests or redirect for regular requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menerbitkan invoice. ' . $e->getMessage()
+                ], 500);
+            }
+            
             return redirect()->back()->with('error', 'Gagal menerbitkan invoice. ' . $e->getMessage());
         }
     }
 
     /**
      * Helper function untuk membuat nomor invoice unik.
+     * @param string $type - 'MTR' for meter-based pricing or 'QTY' for piece-based pricing
      */
-    private function generateInvoiceNumber()
+    private function generateInvoiceNumber($type = 'MTR')
     {
-        $date = now();
-        $month = $date->format('m');
-        $year = $date->format('Y');
-        $count = Invoice::whereYear('created_at', $year)->whereMonth('created_at', $month)->count() + 1;
-        return "INV/{$month}/{$year}/" . str_pad($count, 4, '0', STR_PAD_LEFT);
+        return DB::transaction(function () use ($type) {
+            $date = now();
+            $month = $date->format('m');
+            $year = $date->format('Y');
+            
+            // Count invoices with the same type in current month/year
+            $pattern = "INV/{$type}/{$month}/{$year}/%";
+            $count = Invoice::where('invoice_number', 'LIKE', $pattern)
+                ->lockForUpdate()
+                ->count() + 1;
+            
+            return "INV/{$type}/{$month}/{$year}/" . str_pad($count, 4, '0', STR_PAD_LEFT);
+        }, 5);
     }
 
     /**
@@ -248,7 +340,16 @@ class InvoiceController extends Controller
     public function viewClosedRedirect()
     {
         $closedSpkList = Spk::whereIn('status', ['Closed', 'Rejected'])
-            ->whereNull('price_per_meter')
+            ->where(function($query) {
+                $query->where(function($q) {
+                    $q->whereNull('price_per_meter')
+                      ->orWhere('price_per_meter', 0);
+                })
+                ->where(function($q) {
+                    $q->whereNull('harga_per_piece')
+                      ->orWhere('harga_per_piece', 0);
+                });
+            })
             ->orderBy('closed_date', 'desc')
             ->get();
 

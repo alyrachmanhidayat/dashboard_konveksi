@@ -6,7 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SpkController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\RekapController; // Jika Anda sudah membuatnya
+use App\Http\Controllers\RekapController;
 
 
 // =========================================================================
@@ -26,6 +26,8 @@ Route::post('/spk/{spk}/status', [SpkController::class, 'updateStatus'])->name('
 Route::get('/spkClose-view', [InvoiceController::class, 'viewClosedRedirect'])->name('spk.closed.view');
 // menampilkan halaman cetak SPK
 Route::get('/spk/{spk}/print', [SpkController::class, 'print'])->name('spk.print');
+// API endpoint for dashboard SPK data
+Route::get('/api/spk-data', [SpkController::class, 'getSpkData'])->name('spk.data');
 
 
 Route::middleware('auth')->group(function () {

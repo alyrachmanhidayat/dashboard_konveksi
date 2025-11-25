@@ -3,9 +3,9 @@
 @section('content')
 
 {{-- Piutang --}}
-<div class="d-sm-flex justify-content-between align-items-center mb-4">
+<!-- <div class="d-sm-flex justify-content-between align-items-center mb-4">
     <h3 class="text-dark mb-0">Piutang</h3>
-</div>
+</div> -->
 
 {{-- notif alert --}}
 @if (session('success'))
@@ -21,36 +21,40 @@
 </div>
 @endif
 
-<div id="piutang-table-list">
+<div>
     <div class="card shadow">
-        <div class="card-header"></div>
+        <div class="card-header py-3">
+            <h4 class="text-primary m-0 fw-bold">Piutang</h4>
+        </div>
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    {{-- Input Pencarian --}}
-                    <input type="text" class="form-control search" placeholder="Cari no invoice atau nama konsumen...">
-                </div>
-                <div class="col-md-6 text-md-end">
+            <div class="row mb-3 d-flex justify-content-end">
+                <div class="col-md-6 text-md-start mt-2">
                     {{-- Form Filter Tanggal --}}
-                    <form method="GET" action="{{ route('piutang.index') }}" class="d-inline-block me-2">
+                    <!-- <form method="GET" action="{{ route('piutang.index') }}" class="d-inline-block me-2">
                         <div class="input-group">
                             <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}" title="Dari Tanggal">
                             <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}" title="Sampai Tanggal">
                             <button type="submit" class="btn btn-sm btn-primary">Filter</button>
                             <a href="{{ route('piutang.index') }}" class="btn btn-sm btn-outline-secondary" title="Hapus Filter">Clear</a>
                         </div>
-                    </form>
-                    <br><br>
-                    {{-- Tombol Sort --}}
-                    <span class="me-2">Urutkan berdasarkan:</span>
-                    <button class="btn btn-sm btn-outline-primary sort" data-sort="konsumen">Konsumen</button>
-                    <button class="btn btn-sm btn-outline-danger sort" data-sort="sisa-tagihan">Sisa Tagihan</button>
+                    </form> -->
+                    {{-- Date Range Filter (Client-side with DataTables) --}}
+                    <div class="input-group ">
+                        <input type="date" id="min-date" class="form-control form-control-sm" placeholder="Dari Tanggal" title="Dari Tanggal">
+                        <input type="date" id="max-date" class="form-control form-control-sm" placeholder="Sampai Tanggal" title="Sampai Tanggal">
+                        <button type="button" id="clear-filter" class="btn btn-sm btn-outline-primary" title="Hapus Filter">Clear</button>
+                    </div>
                 </div>
+                <!-- <div class="col-md-6 mt-2">
+                    {{-- Input Pencarian --}}
+                    <input type="text" id="search-input" class="form-control" placeholder="Cari no invoice atau nama konsumen...">
+                </div> -->
             </div>
             <div class="table-responsive mt-2">
-                <table class="table my-0">
+                <table id="piutang-table" class="table table-striped">
                     <thead>
                         <tr>
+                            <th>Tanggal</th>
                             <th>No Invoice</th>
                             <th>Nama Konsumen</th>
                             <th>Nominal Tagihan</th>
@@ -59,20 +63,18 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    {{-- Beri class="list" pada tbody --}}
-                    <tbody class="list">
+                    <tbody>
                         @forelse ($invoices as $invoice)
                         <tr>
-                            {{-- Kita tidak bisa menaruh <form> di dalam <tr> jika <tbody> adalah target List.js --}}
-                            <!--  Jadi, setiap tombol bayar akan memiliki form-nya sendiri -->
-                            <td class="no-invoice">
+                            <td data-order="{{ $invoice->created_at->format('Y-m-d') }}">{{ $invoice->created_at->format('d/m/Y') }}</td>
+                            <td>
                                 <a href="{{ route('invoice.print', ['invoiceIds' => $invoice->id]) }}" target="_blank">
                                     {{ $invoice->invoice_number }}
                                 </a>
                             </td>
-                            <td class="konsumen">{{ $invoice->customer_name }}</td>
+                            <td>{{ $invoice->customer_name }}</td>
                             <td>Rp. {{ number_format($invoice->total_amount, 0, ',', '.') }}</td>
-                            <td class="sisa-tagihan text-danger fw-bold" data-sisa-tagihan="{{ $invoice->remaining_amount }}">
+                            <td class="text-danger fw-bold">
                                 Rp. {{ number_format($invoice->remaining_amount, 0, ',', '.') }}
                             </td>
                             <td>
@@ -125,14 +127,18 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center">Tidak ada data piutang.</td>
+                            <td class="text-center" colspan="7">Tidak ada data piutang.</td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
+                            <td style="display: none;"></td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            {{-- Kontainer untuk pagination List.js --}}
-            <ul class="pagination mt-3"></ul>
         </div>
         <div class="card-footer"></div>
     </div>
@@ -141,43 +147,74 @@
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Opsi untuk List.js
-        var options = {
-            valueNames: [
-                'no-invoice',
-                'konsumen',
-                {
-                    name: 'sisa-tagihan',
-                    attr: 'data-sisa-tagihan'
+        // Custom date range filtering function for DataTables
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                var min = $('#min-date').val();
+                var max = $('#max-date').val();
+                var date = data[0]; // Date column is index 0 (first column)
+                
+                // Convert date from dd/mm/yyyy to yyyy-mm-dd for comparison
+                var dateParts = date.split('/');
+                if (dateParts.length === 3) {
+                    var dateStr = dateParts[2] + '-' + dateParts[1] + '-' + dateParts[0]; // yyyy-mm-dd
+                } else {
+                    return true; // If date format is invalid, show the row
                 }
-            ],
-            page: 10,
-            pagination: {
-                innerWindow: 1,
-                outerWindow: 1,
-                paginationClass: "pagination", // Nama class untuk <ul>
-            },
-        };
-
-        // Inisialisasi List.js
-        var piutangList = new List('piutang-table-list', options);
-
-        // Tambahkan class Bootstrap ke pagination yang digenerate List.js
-        piutangList.on('updated', function(list) {
-            const paginationItems = document.querySelectorAll('.pagination li');
-            paginationItems.forEach(function(item) {
-                item.classList.add('page-item');
-                const link = item.querySelector('a');
-                if (link) {
-                    link.classList.add('page-link');
+                
+                if (
+                    (min === '' && max === '') ||
+                    (min === '' && dateStr <= max) ||
+                    (min <= dateStr && max === '') ||
+                    (min <= dateStr && dateStr <= max)
+                ) {
+                    return true;
                 }
-            });
-            const activeItem = document.querySelector('.pagination li.active');
-            if (activeItem) {
-                activeItem.classList.add('active');
+                return false;
             }
+        );
+
+        // Initialize DataTable
+        var table = $('#piutang-table').DataTable({
+            "pageLength": 10,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "order": [[0, 'desc']], // Sort by date column (descending)
+            "language": {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ entri",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 entri",
+                "paginate": {
+                    "first": "Pertama",
+                    "last": "Terakhir",
+                    "next": "Berikutnya",
+                    "previous": "Sebelumnya"
+                }
+            }
+        });
+
+        // Event listener for date inputs - redraw table when dates change
+        $('#min-date, #max-date').on('change', function() {
+            table.draw();
+        });
+
+        // Clear filter button
+        $('#clear-filter').on('click', function() {
+            $('#min-date').val('');
+            $('#max-date').val('');
+            table.draw();
         });
         
         // Update modal amount when input changes

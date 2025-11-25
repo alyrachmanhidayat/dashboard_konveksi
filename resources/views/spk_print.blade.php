@@ -5,11 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak SPK - {{ $spk->spk_number }}</title>
-    @vite(['resources/css/print.css'])
+    <!-- @vite(['resources/css/print.css']) -->
+    <link rel="stylesheet" href="{{asset('css/print.css')}}">
+
 </head>
 
 <body>
     <div class="container">
+        <!-- Watermark -->
+        <img src="{{ asset('assets/img/logo_ISW-removebg.png') }}" alt="Watermark" class="watermark-img">
+        
         <div class="periode-title">
             PERIODE {{ \Carbon\Carbon::parse($spk->entry_date)->format('Y') }}
         </div>

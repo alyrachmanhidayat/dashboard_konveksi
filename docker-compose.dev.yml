@@ -1,0 +1,73 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: dashboard_konveksi_app_dev
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+      - /var/www/node_modules
+    ports:
+      - "8000:80"
+    environment:
+      - "DB_HOST=db"
+      - "DB_PORT=3306"
+      - "DB_DATABASE=laravel_db"
+      - "DB_USERNAME=laravel_user"
+      - "DB_PASSWORD=laravel_password"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - dashboard_konveksi
+
+  db:
+    image: mysql:8.0
+    container_name: dashboard_konveksi_db_dev
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: laravel_db
+      MYSQL_USER: laravel_user
+      MYSQL_PASSWORD: laravel_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata_dev:/var/lib/mysql
+    networks:
+      - dashboard_konveksi
+    command: --default-authentication-plugin=mysql_native_password
+
+  phpmyadmin:
+    image: phpmyadmin:5.2.1
+    container_name: dashboard_konveksi_phpmyadmin_dev
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=laravel_user
+      - PMA_PASSWORD=laravel_password
+      - MYSQL_ROOT_PASSWORD=root_password
+    depends_on:
+      - db
+    networks:
+      - dashboard_konveksi
+
+  redis:
+    image: redis:7-alpine
+    container_name: dashboard_konveksi_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - dashboard_konveksi
+
+networks:
+  dashboard_konveksi:
+    driver: bridge
+
+volumes:
+  dbdata_dev:

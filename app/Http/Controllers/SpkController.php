@@ -219,6 +219,37 @@ class SpkController extends Controller
         return redirect()->back()->with('error', 'Aksi tidak valid.');
     }
 
+    /**
+     * API endpoint untuk mendapatkan data SPK dalam format JSON
+     */
+    public function getSpkData()
+    {
+        $spks = Spk::where('status', '!=', 'Closed')
+            ->where('status', '!=', 'Rejected')
+            ->get();
+
+        $spkData = $spks->map(function ($spk) {
+            return [
+                'id' => $spk->id,
+                'spk_number' => $spk->spk_number,
+                'customer_name' => $spk->customer_name,
+                'order_name' => $spk->order_name,
+                'total_qty' => $spk->total_qty,
+                'total_meter' => $spk->total_meter,
+                'delivery_date' => $spk->delivery_date,
+                'progressPercentage' => $spk->progressPercentage,
+                'progressBarColor' => $spk->progressBarColor,
+                'bgColor' => $spk->bgColor,
+                'formatted_delivery_date' => $spk->formattedDeliveryDate,
+            ];
+        });
+
+        return response()->json([
+            'data' => $spkData,
+            'count' => $spks->count()
+        ]);
+    }
+
     public function print(Spk $spk)
     {
         // 'load()' digunakan untuk Eager Loading relasi pada model yang sudah ada.

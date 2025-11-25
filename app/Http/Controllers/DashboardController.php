@@ -36,14 +36,14 @@ class DashboardController extends Controller
             ->whereDate('delivery_date', '<=', $today->copy()->addDays(12))
             ->count();
 
-        $deadlineH2 = Spk::where('status', 'In Progress')
-            ->whereDate('delivery_date', '=', $today->copy()->addDays(2))->count();
+        // $deadlineH2 = Spk::where('status', 'In Progress')
+        //     ->whereDate('delivery_date', '=', $today->copy()->addDays(2))->count();
 
         // Mengambil data untuk tabel SPK yang sedang berjalan
         $spkList = Spk::where('status', 'In Progress')
             ->orderBy('delivery_date', 'asc')
             ->get();
 
-        return view('layouts.dashboard', compact('totalOrders', 'deadlineH8', 'deadlineH2', 'deadlineH10', 'deadlineH12', 'spkList'));
+        return view('layouts.dashboard', compact('totalOrders', 'deadlineH8', 'deadlineH10', 'deadlineH12', 'spkList'));
     }
 }

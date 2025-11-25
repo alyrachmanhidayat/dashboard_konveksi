@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Invoice;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Spk extends Model
@@ -22,6 +23,11 @@ class Spk extends Model
     public function invoice()
     {
         return $this->hasOne(Invoice::class);
+    }
+    
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     // Accessor for progress percentage
